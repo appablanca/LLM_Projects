@@ -33,7 +33,8 @@ def generate_text(user_message):
     while retries < MAX_RETRIES:
         try:
             response = model.generate_content(user_message)
-            print(user_message)
+            
+            print("Chat History:", chat_history)
             print(response.usage_metadata)
 
 
@@ -73,23 +74,18 @@ def chatbot_mode(user_message):
 
     # Append user message to chat history
     chat_history.append(f"User: {user_message}")
-    # conversation = "\n".join(chat_history)
+    conversation = "\n".join(chat_history)
     
-    
-    filtered_conversation = "\n".join(
-        [msg for msg in chat_history if not msg.startswith("Bot:")]
-    )
-
     retries = 0
     delay = INITIAL_DELAY
 
     while retries < MAX_RETRIES:
         try:
             # Generate response using text generation function
-            bot_response = generate_text(filtered_conversation)
+            bot_response = generate_text(conversation)
 
             if bot_response:
-                chat_history.append(f"Bot: {bot_response.text}")
+                chat_history.append(f" {bot_response.text}")
 
                 # Check if total tokens exceed the limit
                 if total_tokens_used >= TOKEN_WARNING_THRESHOLD:
@@ -99,8 +95,8 @@ def chatbot_mode(user_message):
                 while total_tokens_used >= CONTEXT_WINDOW_LIMIT:
                     print("\n Context window exceeded! Removing old messages to stay within the limit.\n")
                     chat_history.pop(0)  # Remove oldest message
-                    # conversation = "\n".join(chat_history)
-                    bot_response = generate_text(chat_history)
+                    conversation = "\n".join(chat_history)
+                    bot_response = generate_text(conversation)
                     total_tokens_used = getattr(bot_response.usage_metadata, "total_token_count", 0)
 
                 return bot_response.text
