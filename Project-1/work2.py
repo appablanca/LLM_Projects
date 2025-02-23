@@ -1,5 +1,6 @@
 import google.generativeai as genai
 import os
+import time
 from dotenv import load_dotenv
 
 # Load API key
@@ -14,56 +15,125 @@ model = genai.GenerativeModel("gemini-1.5-flash")
 CONTEXT_WINDOW_LIMIT = 1_000_000  # 1 million tokens
 TOKEN_WARNING_THRESHOLD = int(CONTEXT_WINDOW_LIMIT * 0.8)  # 80% threshold
 
-chat_history = []
+# Retry settings
+MAX_RETRIES = 3
+INITIAL_DELAY = 2  # Start with 2 seconds
+
+chat_history = []  # Stores chat conversation
 total_tokens_used = 0  # Track token usage
 
 
-def chatbot_response(user_message):
+def generate_text(user_message):
+   
+    global total_tokens_used
+
+    retries = 0
+    delay = INITIAL_DELAY
+
+    while retries < MAX_RETRIES:
+        try:
+            response = model.generate_content(user_message)
+            print(user_message)
+            print(response.usage_metadata)
+
+
+            # Get token usage
+            if not hasattr(response, "usage_metadata"):
+                print("Warning: API response does not contain usage metadata.")
+                token_count = 0
+            else:
+                token_count = getattr(response.usage_metadata, "total_token_count", 0)
+                
+
+            total_tokens_used = token_count
+            # Warn if context window is close to the limit
+            if total_tokens_used >= TOKEN_WARNING_THRESHOLD:
+                print("\n Warning: You have used over 800,000 tokens! Consider summarizing your messages.\n")
+
+            return response
+
+        except Exception as e:
+            if "rate limit" in str(e).lower() or "429" in str(e):
+                print(f" Rate limit reached. Retrying in {delay} seconds...")
+                time.sleep(delay)
+                retries += 1
+                delay *= 2  # Exponential backoff
+            else:
+                print(f" API Error: {e}")
+                return None
+
+    print(" Max retries reached. Please try again later.")
+    return None
+
+
+
+def chatbot_mode(user_message):
+    
     global chat_history, total_tokens_used
 
-    # Append user message
+    # Append user message to chat history
     chat_history.append(f"User: {user_message}")
-    conversation = "\n".join(chat_history)
+    # conversation = "\n".join(chat_history)
+    
+    
+    filtered_conversation = "\n".join(
+        [msg for msg in chat_history if not msg.startswith("Bot:")]
+    )
 
-    # Get response from Gemini
-    response = model.generate_content(conversation)
+    retries = 0
+    delay = INITIAL_DELAY
 
-    # Debug: Print response to check the structure
-    if not hasattr(response, "usage_metadata"):
-        print("⚠️ Warning: API response does not contain usage metadata.")
-        token_count = 0
-    else:
-        # Check if 'usage_metadata' has 'total_token_count'
-        token_count = getattr(response.usage_metadata, "total_token_count", 0)
+    while retries < MAX_RETRIES:
+        try:
+            # Generate response using text generation function
+            bot_response = generate_text(filtered_conversation)
 
-    total_tokens_used = token_count
+            if bot_response:
+                chat_history.append(f"Bot: {bot_response.text}")
 
-    # Warn if approaching the context limit
-    if total_tokens_used >= TOKEN_WARNING_THRESHOLD:
-        print("\n⚠️ Warning: You have used over 800,000 tokens! Consider summarizing or restarting the conversation to prevent overflow.\n")
+                # Check if total tokens exceed the limit
+                if total_tokens_used >= TOKEN_WARNING_THRESHOLD:
+                    print("\n Warning: Conversation is reaching the token limit. Consider summarizing.\n")
 
-    # Handle context window overflow (truncate older messages)
-    while total_tokens_used >= CONTEXT_WINDOW_LIMIT:
-        print("\n🚨 Context window exceeded! Truncating older messages to stay within limit.\n")
-        chat_history.pop(0)  # Remove oldest message
-        conversation = "\n".join(chat_history)
-        response = model.generate_content(conversation)
-        total_tokens_used = getattr(response.usage_metadata, "total_token_count", 0)
+                # Handle context overflow (truncate older messages)
+                while total_tokens_used >= CONTEXT_WINDOW_LIMIT:
+                    print("\n Context window exceeded! Removing old messages to stay within the limit.\n")
+                    chat_history.pop(0)  # Remove oldest message
+                    # conversation = "\n".join(chat_history)
+                    bot_response = generate_text(chat_history)
+                    total_tokens_used = getattr(bot_response.usage_metadata, "total_token_count", 0)
 
-    # Append bot response
-    chat_history.append(f"Bot: {response.text}")
+                return bot_response.text
 
-    return response
+            return None
+
+        except Exception as e:
+            if "rate limit" in str(e).lower() or "429" in str(e):
+                print(f" Rate limit reached. Retrying in {delay} seconds...")
+                time.sleep(delay)
+                retries += 1
+                delay *= 2  # Exponential backoff
+            else:
+                print(f" API Error: {e}")
+                return None
+
+    print(" Max retries reached. Please try again later.")
+    return None
 
 
-# Run chatbot loop
+print("\n Chatbot is running. Type 'exit' to quit.\n")
+
 while True:
     user_message = input("User: ")
+
     if user_message.lower() in ['exit', 'quit']:
         print("Exiting chat...")
-        print("Chat history:", chat_history)
         break
 
-    bot_response = chatbot_response(user_message)
-    print("Bot:", bot_response.text)
-    print("Tokens used:", total_tokens_used)
+    bot_response = chatbot_mode(user_message)
+
+    if bot_response:
+        print(f"Bot: {bot_response}")
+        print(f"Total tokens used: {total_tokens_used}")
+    else:
+        print("Bot: Unable to generate a response. Try again later.")
