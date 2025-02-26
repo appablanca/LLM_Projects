@@ -1,6 +1,8 @@
 import google.generativeai as genai
 import os
 import time
+import random
+import string
 from dotenv import load_dotenv
 
 # Load API key
@@ -114,11 +116,12 @@ def rateLimitTest():
             print("Request failed or rate limit reached.\n")
             break  # Stop if rate limit is hit
 
-def contextWindowTest():
-    print("Starting context window test: Sending 10 requests of 100,000 tokens each...")
-    test_message = "This is a context window test. " * 30000  # Approx. 100,000 tokens per request
-    
-    for i in range(10):
+def generate_random_text(length):
+    return ''.join(random.choices(string.ascii_letters + string.digits + ' ', k=length))
+
+def contextWindowTest():    
+    for i in range(1):
+        test_message = generate_random_text(1500000)  # Generate a unique 100,000 token message
         chat_history.append(f"User: {test_message}")
         conversation = "\n".join(chat_history)
         print(f"Request {i+1}/10")
@@ -185,7 +188,7 @@ while True:
     if user_message.lower() == "tokencount":
         tokenCount()
         continue
-    
+
     bot_response = chatbot_mode(user_message)
     
     if bot_response:
