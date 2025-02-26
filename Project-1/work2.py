@@ -150,6 +150,16 @@ def sendBulk():
         print(f"Error: File '{file_name}' not found in the current directory: {os.getcwd()}")
     except Exception as e:
         print(f"An error occurred: {e}")
+
+def tokenCount():
+    text = input("Enter the text to calculate token count: ")
+    
+    try:
+        token_count = model.count_tokens(text).total_tokens  # Use Gemini's tokenizer
+        print(f"Token count: {token_count}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
     
 print("\nChatbot is running. Type 'exit' to quit or 'rateLimitTest'/'contextWindowTest' to run the tests.\n")
 
@@ -170,6 +180,10 @@ while True:
 
     if user_message.lower() == "sendbulk":
         sendBulk()
+        continue
+    
+    if user_message.lower() == "tokencount":
+        tokenCount()
         continue
     
     bot_response = chatbot_mode(user_message)
