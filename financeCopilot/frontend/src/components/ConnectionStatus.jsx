@@ -52,7 +52,7 @@ const ConnectionStatus = () => {
         }
         sx={{ width: "100%" }}
       >
-        {isOnline ? "Şuan çevrimiçisiniz!" : "Çevrimdışısınız. Bazı özellikler kullanılamayabilir!"}
+        {isOnline ? "You are online now!" : "You are offline. Some features may not be available!"}
       </Alert>
     </Snackbar>
   );

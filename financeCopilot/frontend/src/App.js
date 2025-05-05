@@ -25,20 +25,20 @@ function AppContent() {
   }
 
   // Eğer kullanıcı giriş yapmamışsa ve login sayfasında değilse, login sayfasına yönlendir
-  if (!isAuthenticated && location.pathname !== "/giris") {
-    return <Navigate to="/giris" replace />;
+  if (!isAuthenticated && location.pathname !== "/login") {
+    return <Navigate to="/login" replace />;
   }
 
   // Eğer kullanıcı giriş yapmışsa ve login sayfasındaysa, ana sayfaya yönlendir
-  if (isAuthenticated && location.pathname === "/giris") {
-    return <Navigate to="/ana-ekran" replace />;
+  if (isAuthenticated && location.pathname === "/login") {
+    return <Navigate to="/dashboard" replace />;
   }
 
   const LoginRoutes = () => {
     return (
       <Routes>
-        <Route path="/" element={<Navigate to="/giris" />} />
-        <Route path="/giris" element={<LoginForm />} />
+        <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="/login" element={<LoginForm />} />
       </Routes>
     );
   };
@@ -46,9 +46,9 @@ function AppContent() {
   // const AppRoutes = () => {
   //   return (
   //     <Routes>
-  //       <Route path="/" element={<Navigate to="/ana-ekran" />} />
-  //       <Route path="/ana-ekran" element={<Dashboard />} />
-  //       <Route path="/profil" element={<Profile />} />
+  //       <Route path="/" element={<Navigate to="/dashboard" />} />
+  //       <Route path="/dashboard" element={<Dashboard />} />
+  //       <Route path="/profile" element={<Profile />} />
 
   //       <Route path="/copilot" element={<Copilot />} />
 

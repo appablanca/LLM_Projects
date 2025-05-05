@@ -36,6 +36,7 @@ export const LoginForm = () => {
   const [loading, setLoading] = useState(false); // Loading durumu
   const [showPassword, setShowPassword] = useState(false); // Şifre görünürlüğü durumu
   const [rememberMe, setRememberMe] = useState(false);
+  const [kvkkApproved, setKvkkApproved] = useState(false);
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate(); // Yönlendirme için kullanılır
@@ -59,7 +60,7 @@ export const LoginForm = () => {
       // Keep the animation timeout
       const animationTimeout = setTimeout(() => {
         setLoading(false);
-        navigate("/ana-ekran");
+        navigate("/dashboard");
       }, 3000);
 
       // Cleanup timeout on unmount
@@ -84,7 +85,7 @@ export const LoginForm = () => {
 
   const validateForm = () => {
     if (!email) {
-      toast.error("E-posta adresi gereklidir!", {
+      toast.error("Email address is required!", {
         position: "top-right",
         autoClose: 2500,
         hideProgressBar: false,
@@ -98,7 +99,7 @@ export const LoginForm = () => {
     }
 
     if (!validateEmail(email)) {
-      toast.error("Geçersiz e-posta formatı!", {
+      toast.error("Invalid email format!", {
         position: "top-right",
         autoClose: 2500,
         hideProgressBar: false,
@@ -112,7 +113,7 @@ export const LoginForm = () => {
     }
 
     if (!password) {
-      toast.error("Şifre gereklidir!", {
+      toast.error("Password required!", {
         position: "top-right",
         autoClose: 2500,
         hideProgressBar: false,
@@ -127,7 +128,7 @@ export const LoginForm = () => {
 
     if (!isSignIn && !validatePassword(password)) {
       toast.error(
-        "Şifre en az 8 karakter, bir büyük harf ve bir özel karakter içermelidir!",
+        "Password must be at least 8 characters, contain one capital letter and one special character!",
         {
           position: "top-right",
           autoClose: 2500,
@@ -143,7 +144,7 @@ export const LoginForm = () => {
     }
 
     if (!isSignIn && password !== passwordRepeat) {
-      toast.error("Şifreler eşleşmiyor!", {
+      toast.error("Passwords do not match!", {
         position: "top-right",
         autoClose: 2500,
         hideProgressBar: false,
@@ -157,7 +158,7 @@ export const LoginForm = () => {
     }
 
     if (!isSignIn && !name) {
-      toast.error("Ad gereklidir!", {
+      toast.error("Name is required!", {
         position: "top-right",
         autoClose: 2500,
         hideProgressBar: false,
@@ -171,7 +172,7 @@ export const LoginForm = () => {
     }
 
     if (!isSignIn && !surname) {
-      toast.error("Soyad gereklidir!", {
+      toast.error("Surname is required!", {
         position: "top-right",
         autoClose: 2500,
         hideProgressBar: false,
@@ -180,6 +181,19 @@ export const LoginForm = () => {
         draggable: true,
         progress: undefined,
         toastId: "surname-required",
+      });
+      return false;
+    }
+    if (!isSignIn && !kvkkApproved) {
+      toast.error("You must approve the KVKK and Açık Rıza texts!", {
+        position: "top-right",
+        autoClose: 2500,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        toastId: "kvkk-required",
       });
       return false;
     }
@@ -194,7 +208,7 @@ export const LoginForm = () => {
       setLoading(true);
       const response = await login(email, password, rememberMe);
       if (response) {
-        toast.success("Giriş başarılı! Yönlendiriliyorsunuz...", {
+        toast.success("Login successful! You are being redirected...", {
           position: "top-right",
           autoClose: 2500,
           hideProgressBar: false,
@@ -205,7 +219,7 @@ export const LoginForm = () => {
           toastId: "login-success",
         });
       } else {
-        toast.error("Giriş başarısız. Bilgilerinizi kontrol edin.", {
+        toast.error("Login failed. Check your information.", {
           position: "top-right",
           autoClose: 2500,
           hideProgressBar: false,
@@ -218,7 +232,7 @@ export const LoginForm = () => {
         setLoading(false);
       }
     } catch (error) {
-      toast.error("Giriş başarısız. Bilgilerinizi kontrol edin.", {
+      toast.error("Login failed. Check your information.", {
         position: "top-right",
         autoClose: 2500,
         hideProgressBar: false,
@@ -240,7 +254,7 @@ export const LoginForm = () => {
       setLoading(true);
       const response = await register(email, name, surname, password);
       if (response === "User created") {
-        toast.success("Kayıt başarılı! Giriş yapabilirsiniz...", {
+        toast.success("Registration successful! You can log in...", {
           position: "top-right",
           autoClose: 2500,
           hideProgressBar: false,
@@ -258,7 +272,7 @@ export const LoginForm = () => {
         setPasswordRepeat("");
         setIsSignIn(true);
       } else if (response === "Failed to register user: User already exists") {
-        toast.error("Bu e-posta adresi zaten kullanımda!", {
+        toast.error("This email address is already in use!", {
           position: "top-right",
           autoClose: 2500,
           hideProgressBar: false,
@@ -269,7 +283,7 @@ export const LoginForm = () => {
           toastId: "email-exists",
         });
       } else {
-        toast.error("Kayıt başarısız. Bilgilerinizi kontrol edin.", {
+        toast.error("Registration failed. Check your information.", {
           position: "top-right",
           autoClose: 2500,
           hideProgressBar: false,
@@ -281,7 +295,7 @@ export const LoginForm = () => {
         });
       }
     } catch (error) {
-      toast.error("Kayıt başarısız. Bilgilerinizi kontrol edin.", {
+      toast.error("Registration failed. Check your information.", {
         position: "top-right",
         autoClose: 2500,
         hideProgressBar: false,
@@ -377,22 +391,22 @@ export const LoginForm = () => {
                 mb={2}
               >
                 {isForgotPassword
-                  ? "Şifre Sıfırla"
+                  ? "Reset Password"
                   : isSignIn
-                  ? "Giriş Yap"
-                  : "Kayıt Ol"}
+                  ? "Sign in"
+                  : "Sign up"}
               </Typography>
               <TextField
-                label="E-posta"
+                label="E-mail"
                 variant="outlined"
                 fullWidth
                 value={email}
                 error={!!(emailInvalid || emailMismatch)}
                 helperText={
                   emailInvalid
-                    ? "Geçersiz e-posta adresi!"
+                    ? "Invalid email address!"
                     : emailMismatch
-                    ? "E-posta adresleri eşleşmiyor!"
+                    ? "Email addresses do not match!"
                     : ""
                 }
                 autoComplete="email"
@@ -444,12 +458,12 @@ export const LoginForm = () => {
               />
               {!isSignIn && !isForgotPassword && (
                 <TextField
-                  label="E-posta Tekrar"
+                  label="E-mail Repeat"
                   variant="outlined"
                   fullWidth
                   error={!!emailMismatch}
                   helperText={
-                    emailMismatch ? "E-posta adresleri eşleşmiyor!" : ""
+                    emailMismatch ? "Email addresses do not match!" : ""
                   }
                   value={emailRepeat}
                   autoComplete="email"
@@ -502,7 +516,7 @@ export const LoginForm = () => {
               )}
               {!isSignIn && !isForgotPassword && (
                 <TextField
-                  label="Ad"
+                  label="Name"
                   variant="outlined"
                   fullWidth
                   value={name}
@@ -553,7 +567,7 @@ export const LoginForm = () => {
               )}
               {!isSignIn && !isForgotPassword && (
                 <TextField
-                  label="Soyad"
+                  label="Surname"
                   variant="outlined"
                   fullWidth
                   value={surname}
@@ -604,7 +618,7 @@ export const LoginForm = () => {
               )}
               {!isForgotPassword && (
                 <TextField
-                  label="Şifre"
+                  label="Password"
                   variant="outlined"
                   error={
                     !isSignIn &&
@@ -614,9 +628,9 @@ export const LoginForm = () => {
                   helperText={
                     !isSignIn && !isForgotPassword
                       ? passwordMismatch
-                        ? "Şifreler uyuşmuyor!"
+                        ? "Passwords do not match!"
                         : passwordInvalid
-                        ? "Şifre en az 8 karakter, bir büyük harf ve bir özel karakter içermelidir!"
+                        ? "Password must be at least 8 characters, contain one uppercase letter and one special character!"
                         : ""
                       : ""
                   }
@@ -687,7 +701,7 @@ export const LoginForm = () => {
                       }}
                     />
                   }
-                  label="Beni Hatırla"
+                  label="Remember Me"
                   sx={{
                     color: "black",
                     alignSelf: "flex-start",
@@ -699,12 +713,13 @@ export const LoginForm = () => {
                   }}
                 />
               )}
+
               {!isSignIn && !isForgotPassword && (
                 <TextField
-                  label="Şifre Tekrar"
+                  label="Password Repeat"
                   variant="outlined"
                   error={!!passwordMismatch}
-                  helperText={passwordMismatch ? "Şifreler uyuşmuyor!" : ""}
+                  helperText={passwordMismatch ? "Passwords do not match!" : ""}
                   type={showPassword ? "text" : "password"}
                   fullWidth
                   value={passwordRepeat}
@@ -758,6 +773,37 @@ export const LoginForm = () => {
                   }}
                 />
               )}
+              {!isSignIn && !isForgotPassword && (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={kvkkApproved}
+                      onChange={(e) => setKvkkApproved(e.target.checked)}
+                      sx={{ color: "black" }}
+                    />
+                  }
+                  label={
+                    <Typography variant="body2" sx={{ color: "black" }}>
+                      <strong>
+                      I consent to the processing of my personal data.
+                      </strong>{" "}
+                      <a href="/kvkk" target="_blank" rel="noopener noreferrer">
+                        KVKK Aydınlatma Metni
+                      </a>{" "}
+                      and{" "}
+                      <a
+                        href="/acik-riza"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Açık Rıza Metni
+                      </a>
+                      'ni read and accept the terms.
+                    </Typography>
+                  }
+                  sx={{ alignItems: "flex-start", marginBottom: 1 }}
+                />
+              )}
               {isForgotPassword && (
                 <Box sx={{ width: "100%", textAlign: "right", mb: 2 }}>
                   <Typography
@@ -775,7 +821,7 @@ export const LoginForm = () => {
                       setEmail("");
                     }}
                   >
-                    Giriş Yap / Kayıt Ol
+                    Sign In / Sign Up
                   </Typography>
                 </Box>
               )}
@@ -794,10 +840,10 @@ export const LoginForm = () => {
                 }}
               >
                 {isForgotPassword
-                  ? "Sıfırlama Linki Gönder"
+                  ? "Send Reset Link"
                   : isSignIn
-                  ? "Giriş Yap"
-                  : "Kayıt Ol"}
+                  ? "Sign In"
+                  : "Sign Up"}
               </Button>
             </Box>
             {/* Right: Overlay Section */}
@@ -819,7 +865,7 @@ export const LoginForm = () => {
                 fontWeight="600"
                 gutterBottom
               >
-                {isSignIn ? "Merhaba!" : "Tekrar Hoşgeldiniz!"}
+                {isSignIn ? "Hello!" : "Welcome Back!"}
               </Typography>
               <Typography
                 variant="body2"
@@ -830,8 +876,8 @@ export const LoginForm = () => {
                 }}
               >
                 {isSignIn
-                  ? "Kişisel bilgilerinizi girin ve bizimle yolculuğunuza başlayın."
-                  : "Hesabınıza giriş yapın ve yolculuğunuza devam edin."}
+                  ? "Enter your personal information and start your journey with us."
+                  : "Log in to your account and continue your journey."}
               </Typography>
               <Button
                 onClick={() => {
@@ -856,7 +902,7 @@ export const LoginForm = () => {
                   },
                 }}
               >
-                {isSignIn ? "Kayıt Ol" : "Giriş Yap"}
+                {isSignIn ? "Sign Up" : "Sign In"}
               </Button>
             </Box>
           </Box>

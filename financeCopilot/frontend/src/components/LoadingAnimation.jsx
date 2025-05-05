@@ -3,7 +3,7 @@ import { Box, CircularProgress, Typography, useTheme } from "@mui/material";
 import { tokens } from "../theme";
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 
-const LoadingAnimation = ({ fullScreen = false, message = "Yükleniyor..." }) => {
+const LoadingAnimation = ({ fullScreen = false, message = "Loading..." }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
@@ -102,7 +102,7 @@ const LoadingAnimation = ({ fullScreen = false, message = "Yükleniyor..." }) =>
             textAlign: 'center',
           }}
         >
-          Lütfen bekleyin
+          Please wait while we load your data...
         </Typography>
       </Box>
     </Box>
