@@ -56,7 +56,12 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(express.json());
 
+const corsOptions = {
+  origin: "http://localhost:3000",
+  credentials: true,
+};
 
+app.use(cors(corsOptions));
 app.use(session({
   secret: "fempsoft",
   resave: false,
@@ -65,7 +70,7 @@ app.use(session({
   cookie: {
       maxAge: 24 * 60 * 60 * 1000,
       httpOnly: true,
-      secure: true,
+      secure: false,
       sameSite: 'none',
     }
   }

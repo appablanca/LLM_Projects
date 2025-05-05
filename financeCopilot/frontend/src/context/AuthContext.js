@@ -24,9 +24,8 @@ const AuthProvider = ({ children }) => {
   const login = async (email, password, rememberMe) => {
     try {
       const data = await flogin(email, password, rememberMe);
-
-      if (data && data.user) {
-        setUser(data.user);
+      if (data.session && data.session.user) {
+        setUser(data.session.user);
         setIsAuthenticatedUser(true);
         return true;
       }

@@ -10,8 +10,7 @@ import ConnectionStatus from "./components/ConnectionStatus";
 import LoadingAnimation from "./components/LoadingAnimation";
 import { LoginForm } from "./components/LoginForm";
 import AuthProvider, { AuthContext } from "./context/AuthContext";
-
-// import Dashboard from "./scenes/dashboard";
+import Dashboard from "./scenes/dashboard/dashboard";
 // import Profile from "./scenes/profile/Profile";
 // import Copilot from "./scenes/copilot";
 
@@ -43,19 +42,19 @@ function AppContent() {
     );
   };
 
-  // const AppRoutes = () => {
-  //   return (
-  //     <Routes>
-  //       <Route path="/" element={<Navigate to="/dashboard" />} />
-  //       <Route path="/dashboard" element={<Dashboard />} />
-  //       <Route path="/profile" element={<Profile />} />
+  const AppRoutes = () => {
+    return (
+      <Routes>
+        <Route path="/" element={<Navigate to="/dashboard" />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        {/* <Route path="/profile" element={<Profile />} />
 
-  //       <Route path="/copilot" element={<Copilot />} />
+        <Route path="/copilot" element={<Copilot />} /> */}
 
-  //       <Route path="*" element={<Navigate to="/ana-ekran" replace />} />
-  //     </Routes>
-  //   );
-  // };
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    );
+  };
 
   return (
     <ColorModeContext.Provider value={colorMode}>
@@ -64,8 +63,7 @@ function AppContent() {
         <CssBaseline />
         <div className="app">
           <ConnectionStatus />
-          {/* {!isAuthenticated ? <LoginRoutes /> : <AppRoutes />} */}
-          <LoginRoutes />
+          {!isAuthenticated ? <LoginRoutes /> : <AppRoutes />}
         </div>
       </ThemeProvider>
     </ColorModeContext.Provider>

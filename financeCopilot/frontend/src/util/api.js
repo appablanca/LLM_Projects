@@ -1,11 +1,10 @@
-import axios from "axios";
 import axiosInstance from "./axiosInstance.js";
 
-const api = "http://localhost:8000";
+const api = "http://localhost:8080";
 
 async function postLogin(email, password, rememberMe) {
   try {
-    const response = await axiosInstance.post(`/login/postLogin`, {
+    const response = await axiosInstance.post(`${api}/login/postLogin`, {
       email: email,
       password: password,
       rememberMe: rememberMe,
@@ -28,7 +27,7 @@ export function flogin(email, password, rememberMe) {
 
 async function postRegister(email, name, surname, password) {
   try {
-    const response = await axiosInstance.post(`/login/postRegister`, {
+    const response = await axiosInstance.post(`${api}/login/postRegister`, {
       email: email,
       name: name,
       surname: surname,
@@ -52,7 +51,7 @@ export function fregister(email, name, surname, password) {
 
 async function getLogout() {
   try {
-    const response = await axiosInstance.get(`/login/getLogout`);
+    const response = await axiosInstance.get(`${api}/login/getLogout`);
     return response.data;
   } catch (error) {
     console.error(
@@ -71,7 +70,7 @@ export function flogut() {
 
 async function isUserAuthenticated() {
     try {
-      const response = await axiosInstance.get("/login/isAuth");
+      const response = await axiosInstance.get(`${api}/login/isAuth`);
       console.log("response", response);
       return response.data;
     } catch (error) {
