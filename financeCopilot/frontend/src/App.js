@@ -12,7 +12,9 @@ import { LoginForm } from "./components/LoginForm";
 import AuthProvider, { AuthContext } from "./context/AuthContext";
 import Dashboard from "./scenes/dashboard/dashboard";
 // import Profile from "./scenes/profile/Profile";
-// import Copilot from "./scenes/copilot";
+import Copilot from "./scenes/copilot/copilot";
+import Sidebar from "./scenes/global/sidebar";
+import Profile from "./scenes/profile/profile";
 
 function AppContent() {
   const [theme, colorMode] = useMode();
@@ -47,9 +49,8 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        {/* <Route path="/profile" element={<Profile />} />
-
-        <Route path="/copilot" element={<Copilot />} /> */}
+        <Route path="copilot" element={<Copilot />} />
+        <Route path="/profile" element={<Profile />} />
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
@@ -61,9 +62,17 @@ function AppContent() {
       <ToastContainer />
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <div className="app">
-          <ConnectionStatus />
-          {!isAuthenticated ? <LoginRoutes /> : <AppRoutes />}
+        <div className="app" style={{ display: "flex", minHeight: "100vh" }}>
+          {isAuthenticated && <Sidebar />}
+          <div style={{ flex: 1 }}>
+            {loading ? (
+              <LoadingAnimation />
+            ) : !isAuthenticated ? (
+              <LoginRoutes/>
+            ) : (
+             <AppRoutes/>
+            )}
+          </div>
         </div>
       </ThemeProvider>
     </ColorModeContext.Provider>
