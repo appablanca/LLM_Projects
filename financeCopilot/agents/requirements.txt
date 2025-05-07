@@ -1,0 +1,16 @@
+# OCR ve Görüntü İşleme
+pillow
+pytesseract
+
+# PDF İşleme
+PyMuPDF
+
+# Google Gemini API
+google-generativeai
+
+# Ortak kullanım için
+requests
+
+#tesseract windows için indirmek gerek:
+#The latest installers can be downloaded here: tesseract-ocr-w64-setup-5.5.0.20241111.exe (64 bit)
+#indiririken ekstra dil paketlerini de indirip kurmak gerek !!

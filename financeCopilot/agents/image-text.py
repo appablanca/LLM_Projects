@@ -5,6 +5,10 @@ import os
 TESSERACT_PATH = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
 
+#tesseract windows için indirmek gerek:
+#The latest installers can be downloaded here: tesseract-ocr-w64-setup-5.5.0.20241111.exe (64 bit)
+#indiririken ekstra dil paketlerini de indirip kurmak gerek !!
+
 GIRDI_KLASORU = "girdi_klasoru"
 CIKTI_KLASORU = "cikti_klasoru"
 
