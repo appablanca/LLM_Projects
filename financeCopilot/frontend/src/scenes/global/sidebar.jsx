@@ -16,21 +16,32 @@ import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import MenuIcon from "@mui/icons-material/Menu";
+import LogoutIcon from "@mui/icons-material/Logout";
 import { useNavigate, useLocation } from "react-router-dom";
 import { tokens } from "../../theme";
 import { AuthContext } from "../../context/AuthContext";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogTitle from "@mui/material/DialogTitle";
+import Button from "@mui/material/Button";
+import LoadingAnimation from "../../components/LoadingAnimation";
 
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useContext(AuthContext);
+  const { user, logout } = useContext(AuthContext);
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
   const toggleSidebar = () => {
     setIsCollapsed((prev) => !prev);
   };
+
+  
 
   return (
     <Box
@@ -146,7 +157,44 @@ const Sidebar = () => {
           </ListItemIcon>
           {!isCollapsed && <ListItemText primary="Investments" />}
         </ListItem>
+        <ListItem
+          button
+          onClick={() => setLogoutDialogOpen(true)}
+          sx={{ justifyContent: isCollapsed ? "center" : "flex-start", mt: "auto" }}
+        >
+          <ListItemIcon sx={{ color: "white", justifyContent: "center" }}>
+            <LogoutIcon />
+          </ListItemIcon>
+          {!isCollapsed && <ListItemText primary="Logout" />}
+        </ListItem>
       </List>
+      <Dialog
+        open={logoutDialogOpen}
+        onClose={() => setLogoutDialogOpen(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        sx={{
+          "& .MuiDialog-paper": {
+            backgroundColor: colors.primary[400],
+            color: "white",
+          },
+        }}
+      >
+        <DialogTitle>{"Confirm Logout"}</DialogTitle>
+        <DialogContent>
+          <DialogContentText >
+            Are you sure about logging out?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setLogoutDialogOpen(false)} color="error">
+            No
+          </Button>
+          <Button onClick={logout} color="primary" autoFocus>
+            Yes
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
