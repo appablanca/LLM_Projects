@@ -5,8 +5,8 @@ const loginController = require("../controllers/login");
 /**
  * @swagger
  * tags:
- *   name: login
- *   description: API for handling user login and registration
+ *   - name: login
+ *     description: API for handling user login and registration
  */
 
 /**
@@ -14,8 +14,7 @@ const loginController = require("../controllers/login");
  * /login/getLogout:
  *   get:
  *     summary: Logs out the user by destroying the session.
- *     tags:
- *       - login
+ *     tags: [login]
  *     responses:
  *       200:
  *         description: User logged out successfully.
@@ -31,8 +30,7 @@ router.get("/getLogout", loginController.getLogout);
  * /login/postLogin:
  *   post:
  *     summary: Logs in the user by validating credentials and creating a session.
- *     tags:
- *       - login
+ *     tags: [login]
  *     requestBody:
  *       required: true
  *       content:
@@ -66,8 +64,7 @@ router.post("/postLogin", loginController.postLogin);
  * /login/postRegister:
  *   post:
  *     summary: Registers a new user.
- *     tags:
- *       - login
+ *     tags: [login]
  *     requestBody:
  *       required: true
  *       content:
@@ -96,5 +93,21 @@ router.post("/postLogin", loginController.postLogin);
  *         description: Internal server error.
  */
 router.post("/postRegister", loginController.postRegister);
+
+/**
+ * @swagger
+ * /login/isAuth:
+ *   get:
+ *     summary: Checks if the user is authenticated.
+ *     tags: [login]
+ *     responses:
+ *       200:
+ *         description: User is authenticated.
+ *       401:
+ *         description: User is not authenticated.
+ *       500:
+ *         description: Internal server error.
+ */
+router.get("/isAuth", loginController.isAuth);
 
 module.exports = router;

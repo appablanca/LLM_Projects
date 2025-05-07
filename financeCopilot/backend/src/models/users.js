@@ -6,7 +6,7 @@ const fieldSchema = new Schema({
       type: String,
       required: true,
     },
-    description: {
+    content: {
       type: String,
       required: true,
     },
@@ -15,6 +15,7 @@ const fieldSchema = new Schema({
       default: 0,
       required: true,
     },
+
 });
 
 const userSchema = new Schema({
@@ -42,7 +43,12 @@ const userSchema = new Schema({
   fields: {
     type: [fieldSchema],
     default: [],
-  }
+  },
+  isSurvey: {
+    type: Number,
+    default: 0,
+    required: true,
+  },
 });
 
 module.exports = mongoose.model("users", userSchema);

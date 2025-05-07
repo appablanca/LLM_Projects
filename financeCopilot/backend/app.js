@@ -8,6 +8,7 @@ const mongodbAPI = "mongodb+srv://fempsoft:yjJCf6DA9aMTDrvR@financecopilot.oeh7d
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
 
+
 const swaggerOptions = {
   swaggerDefinition: {
     openapi: "3.0.0",
@@ -44,10 +45,15 @@ const store = new mongodbStore({
 });
 
 const loginRoute = require("./src/routes/login.js");
-
+const userPanelRoute = require("./src/routes/userPanel.js");
 
 app.use(bodyParser.urlencoded({ extended: false }));
 
+const corsOptions = {
+  //origin: "http://localhost:3000",
+  credentials: true,
+};
+app.use(cors(corsOptions));
 
 
 
@@ -56,12 +62,9 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(express.json());
 
-const corsOptions = {
-  origin: "http://localhost:3000",
-  credentials: true,
-};
 
-app.use(cors(corsOptions));
+
+
 app.use(session({
   secret: "fempsoft",
   resave: false,
@@ -83,7 +86,7 @@ app.get("/", (req, res) => {
 
 
 
-
+app.use("/userPanel", userPanelRoute);
 app.use("/login", loginRoute);
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));

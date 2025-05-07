@@ -26,6 +26,7 @@ exports.postLogin = async (req, res) => {
             email: user.email,
             name: user.name,
             surname: user.surname,
+            isSurvey: user.isSurvey
 
         };
         req.session.loggedIn = true;
@@ -97,4 +98,12 @@ exports.getLogout = (req, res) => {
   }
 };
 
+exports.isAuth = (req, res) => {
+  console.log("req.session", req.session);
+  if (req.session && req.session.user) {
+      return res.status(200).json({ user: req.session.user });
+  } else {
+      return res.status(401).json({ message: "Unauthorized" });
+  }
+};
 
