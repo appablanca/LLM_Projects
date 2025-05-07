@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useContext, useEffect, useState} from "react"; 
 import {
   Box,
   TextField,
@@ -10,8 +10,12 @@ import {
 import { useFormik } from "formik";
 import * as yup from "yup";
 import { tokens } from "./../theme";
-import { sendSurvey } from "../util/api";
+import { sendSurvey, getSurveyFields, editSurvey } from "../util/api";
 import { toast } from "react-toastify";
+import { AuthContext } from "../context/AuthContext";
+import EditIcon from '@mui/icons-material/Edit';
+import LoadingAnimation from "./LoadingAnimation";
+
 const validationSchema = yup.object({
   age: yup
     .number()
@@ -35,8 +39,14 @@ const validationSchema = yup.object({
 });
 
 const UserSurveyForm = () => {
+
+  const { user } = useContext(AuthContext);
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+
+  const [initialValuesLoaded, setInitialValuesLoaded] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [hasExistingData, setHasExistingData] = useState(false);
 
   const formik = useFormik({
     initialValues: {
@@ -70,18 +80,31 @@ const UserSurveyForm = () => {
         { name: "Risk Tolerance", content: values.riskTolerance },
       ];
 
-      sendSurvey(surveyData)
+      const submitFunction = hasExistingData ? editSurvey : sendSurvey;
+      submitFunction(surveyData)
         .then((response) => {
           if (response?.message === "Survey data saved successfully") {
-            toast.success("Survey submitted successfully!", {
-              position: "top-right",
-              autoClose: 2000,
-              hideProgressBar: true,
-              closeOnClick: true,
-              pauseOnHover: false,
-              draggable: false,
-            });
-            sessionStorage.setItem("surveyCompleted", "true");
+            if (hasExistingData) {
+              toast.success("Survey updated successfully!", {
+                position: "top-right",
+                autoClose: 2000,
+                hideProgressBar: true,
+                closeOnClick: true,
+                pauseOnHover: false,
+                draggable: false,
+              });
+            } else {
+              toast.success("Survey submitted successfully!", {
+                position: "top-right",
+                autoClose: 2000,
+                hideProgressBar: true,
+                closeOnClick: true,
+                pauseOnHover: false,
+                draggable: false,
+              });
+              sessionStorage.setItem("surveyCompleted", "true");
+            }
+            setIsEditing(false);
           } else {
             toast.error(
               "Survey submission failed. Please try again.",{
@@ -111,6 +134,67 @@ const UserSurveyForm = () => {
     },
   });
 
+  useEffect(() => {
+    getSurveyFields()
+      .then((response) => {
+        if (Array.isArray(response)) {
+          const formValues = {
+            age: "",
+            income: "",
+            housing: "",
+            rent: "",
+            maritalStatus: "",
+            children: "",
+            riskTolerance: "",
+          };
+
+          response.forEach((item) => {
+            switch (item.name) {
+              case "Age":
+                formValues.age = item.content;
+                break;
+              case "Income":
+                formValues.income = item.content;
+                break;
+              case "Housing":
+                formValues.housing = item.content;
+                break;
+              case "Rent":
+                formValues.rent = item.content === "N/A" ? "" : item.content;
+                break;
+              case "Marital Status":
+                formValues.maritalStatus = item.content;
+                break;
+              case "Children":
+                formValues.children = item.content === "N/A" ? "" : item.content;
+                break;
+              case "Risk Tolerance":
+                formValues.riskTolerance = item.content;
+                break;
+              default:
+                break;
+            }
+          });
+
+          formik.setValues(formValues);
+          setInitialValuesLoaded(true);
+
+          const hasData = Object.values(formValues).some(val => val !== "");
+          setHasExistingData(hasData);
+          if (hasData) {
+            setIsEditing(false);
+          } else {
+            setIsEditing(true);
+          }
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching survey fields:", err);
+      });
+  }, []);
+
+  if (!initialValuesLoaded) return <LoadingAnimation/>;
+
   return (
     <Box
       component="form"
@@ -124,6 +208,19 @@ const UserSurveyForm = () => {
         margin: "auto",
       }}
     >
+      <Box display="flex" justifyContent="flex-end">
+        {hasExistingData && !isEditing && (
+          <Button
+            variant="outlined"
+            sx={{ mb: 2 , color: colors.greenAccent[500], borderColor: colors.greenAccent[300] }}
+            onClick={() => setIsEditing(true)}
+          >
+            Edit
+            <EditIcon/>
+          </Button>
+        )}
+      </Box>
+
       <Typography variant="h5" mb={2}>
         Personalization Survey
       </Typography>
@@ -139,6 +236,7 @@ const UserSurveyForm = () => {
         onChange={formik.handleChange}
         error={formik.touched.age && Boolean(formik.errors.age)}
         helperText={formik.touched.age && formik.errors.age}
+        disabled={!isEditing}
       />
 
       <TextField
@@ -156,6 +254,7 @@ const UserSurveyForm = () => {
           (formik.touched.income && formik.errors.income) ||
           "Please don’t use '.' or ',' — only whole numbers."
         }
+        disabled={!isEditing}
       />
 
       <TextField
@@ -169,9 +268,10 @@ const UserSurveyForm = () => {
         onChange={formik.handleChange}
         error={formik.touched.housing && Boolean(formik.errors.housing)}
         helperText={formik.touched.housing && formik.errors.housing}
+        disabled={!isEditing}
       >
-        <MenuItem value="renter">Renter</MenuItem>
-        <MenuItem value="owner">Owner</MenuItem>
+        <MenuItem value="renter" disabled={!isEditing}>Renter</MenuItem>
+        <MenuItem value="owner" disabled={!isEditing}>Owner</MenuItem>
       </TextField>
       {formik.values.housing === "renter" && (
         <TextField
@@ -185,6 +285,7 @@ const UserSurveyForm = () => {
           onChange={formik.handleChange}
           error={formik.touched.rent && Boolean(formik.errors.rent)}
           helperText={formik.touched.rent && formik.errors.rent}
+          disabled={!isEditing}
         />
       )}
 
@@ -201,9 +302,10 @@ const UserSurveyForm = () => {
           formik.touched.maritalStatus && Boolean(formik.errors.maritalStatus)
         }
         helperText={formik.touched.maritalStatus && formik.errors.maritalStatus}
+        disabled={!isEditing}
       >
-        <MenuItem value="single">Single</MenuItem>
-        <MenuItem value="married">Married</MenuItem>
+        <MenuItem value="single" disabled={!isEditing}>Single</MenuItem>
+        <MenuItem value="married" disabled={!isEditing}>Married</MenuItem>
       </TextField>
 
       {formik.values.maritalStatus === "married" && (
@@ -222,6 +324,7 @@ const UserSurveyForm = () => {
           onChange={formik.handleChange}
           error={formik.touched.children && Boolean(formik.errors.children)}
           helperText={formik.touched.children && formik.errors.children}
+          disabled={!isEditing}
         />
       )}
 
@@ -238,10 +341,11 @@ const UserSurveyForm = () => {
           formik.touched.riskTolerance && Boolean(formik.errors.riskTolerance)
         }
         helperText={formik.touched.riskTolerance && formik.errors.riskTolerance}
+        disabled={!isEditing}
       >
-        <MenuItem value="low">Low</MenuItem>
-        <MenuItem value="medium">Medium</MenuItem>
-        <MenuItem value="high">High</MenuItem>
+        <MenuItem value="low" disabled={!isEditing}>Low</MenuItem>
+        <MenuItem value="medium" disabled={!isEditing}>Medium</MenuItem>
+        <MenuItem value="high" disabled={!isEditing}>High</MenuItem>
       </TextField>
 
       <Button
@@ -254,6 +358,7 @@ const UserSurveyForm = () => {
             backgroundColor: colors.greenAccent[600],
           },
         }}
+        disabled={!isEditing}
       >
         Send
       </Button>

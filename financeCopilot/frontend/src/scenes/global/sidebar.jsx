@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
   Box,
   List,
@@ -14,15 +14,17 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import ListAltIcon from "@mui/icons-material/ListAlt";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import SmartToyIcon from '@mui/icons-material/SmartToy';
+import SmartToyIcon from "@mui/icons-material/SmartToy";
 import MenuIcon from "@mui/icons-material/Menu";
 import { useNavigate, useLocation } from "react-router-dom";
 import { tokens } from "../../theme";
+import { AuthContext } from "../../context/AuthContext";
 
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useContext(AuthContext);
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
@@ -54,12 +56,28 @@ const Sidebar = () => {
         <MenuIcon />
       </IconButton>
       {!isCollapsed && (
-        <Typography
-          variant="h6"
-          sx={{ mb: 3, fontWeight: "bold", textAlign: "center" }}
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
         >
-          FINANCE COPILOT
-        </Typography>
+          <Typography
+            variant="h6"
+            sx={{ mb: 1, fontWeight: "bold", textAlign: "center" }}
+          >
+            FINANCE COPILOT
+          </Typography>
+          <Box sx={{ display: "flex", gap: 1, mb: 3 }}>
+            <Typography variant="subtitle1" sx={{ textAlign: "center" }}>
+              {user.name}
+            </Typography>
+            <Typography variant="subtitle1" sx={{ textAlign: "center" }}>
+              {user.surname}
+            </Typography>
+          </Box>
+        </Box>
       )}
       <List>
         <ListItem

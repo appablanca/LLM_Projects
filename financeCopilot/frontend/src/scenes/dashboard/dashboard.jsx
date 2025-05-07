@@ -1,23 +1,26 @@
-import React, { useEffect, useState} from "react";
+import React, { useEffect, useState,useContext} from "react";
 import { Box, Typography, useTheme, Button } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { tokens } from "../../theme";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
+import { AuthContext } from "../../context/AuthContext";
 const Dashboard = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-
-  const [surveyCompleted, setSurveyCompleted] = useState(() => {
-    return sessionStorage.getItem("surveyCompleted") === "true";
-  });
-
-  const handleSurveyComplete = () => {
-    sessionStorage.setItem("surveyCompleted", "true");
-    setSurveyCompleted(true);
-  };
-
+  const { user } = useContext(AuthContext);
+  const [surveyCompleted, setSurveyCompleted] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user.isSurvey === 1) {
+      setSurveyCompleted(true);
+      sessionStorage.setItem("surveyCompleted", "true");
+    } else {
+      setSurveyCompleted(false);
+      sessionStorage.setItem("surveyCompleted", "false");
+    }
+  }, [user]);
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>

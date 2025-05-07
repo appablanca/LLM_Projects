@@ -108,3 +108,43 @@ async function sendUserSurvey(surveyData) {
 export function sendSurvey(surveyData) {
   return sendUserSurvey(surveyData);
 }
+
+async function getUserSurvey() {
+  try {
+    const response = await axiosInstance.get(`/userPanel/getFields`);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error getting user survey:",
+      error.response ? error.response.data : error.message
+    );
+    throw new Error(
+      "Failed to get user survey: " +
+        (error.response ? error.response.data : error.message)
+    );
+  }
+}
+export function getSurveyFields() {
+  return getUserSurvey();
+}
+
+async function editSurveyFields (surveyData) {
+  try {
+    const response = await axiosInstance.post(`/userPanel/editSurveyFields`, {
+      surveyData: surveyData,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error getting user survey:",
+      error.response ? error.response.data : error.message
+    );
+    throw new Error(
+      "Failed to get user survey: " +
+        (error.response ? error.response.data : error.message)
+    );
+  }
+}
+export function editSurvey(surveyData) {
+  return editSurveyFields(surveyData);
+}
