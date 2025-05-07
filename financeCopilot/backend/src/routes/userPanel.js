@@ -85,4 +85,62 @@ const userPanelController = require("../controllers/userPanel");
  *         description: Internal server error
  */
 router.post("/doSurvey", userPanelController.doSurvey);
+
+/**
+ * @swagger
+ * /userPanel/getFields:
+ *   get:
+ *     summary: Get all fields for the authenticated user
+ *     tags: [userPanel]
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved user fields
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   name:
+ *                     type: string
+ *                     example: "Housing"
+ *                   content:
+ *                     type: string
+ *                     example: "1000"
+ *                   deleted:
+ *                     type: number
+ *                     example: 0
+ *       401:
+ *         description: Unauthorized - User session not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: User session not found
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: User not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Internal server error
+ */
+router.get("/getFields", userPanelController.getFields);
 module.exports = router;
