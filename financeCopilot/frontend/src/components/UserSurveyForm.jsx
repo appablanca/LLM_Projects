@@ -22,6 +22,9 @@ const validationSchema = yup.object({
   riskTolerance: yup.string().required("Gerekli"),
   children: yup
     .number()
+    .transform((value, originalValue) =>
+      String(originalValue).trim() === "" ? null : value
+    )
     .nullable()
     .min(0, "Cannot be negative")
     .when("maritalStatus", {
@@ -111,6 +114,20 @@ const UserSurveyForm = ({ onSubmit }) => {
         <MenuItem value="renter">Renter</MenuItem>
         <MenuItem value="owner">Owner</MenuItem>
       </TextField>
+      {formik.values.housing === "renter" && (
+        <TextField
+          fullWidth
+          margin="normal"
+          id="rent"
+          name="rent"
+          label="Monthly Rent (TL)"
+          type="number"
+          value={formik.values.rent || ""}
+          onChange={formik.handleChange}
+          error={formik.touched.rent && Boolean(formik.errors.rent)}
+          helperText={formik.touched.rent && formik.errors.rent}
+        />
+      )}
 
       <TextField
         fullWidth
@@ -138,7 +155,11 @@ const UserSurveyForm = ({ onSubmit }) => {
           name="children"
           label="Number of Children"
           type="number"
-          value={formik.values.children || ""}
+          value={
+            formik.values.children === "" || formik.values.children === null
+              ? ""
+              : formik.values.children
+          }
           onChange={formik.handleChange}
           error={formik.touched.children && Boolean(formik.errors.children)}
           helperText={formik.touched.children && formik.errors.children}

@@ -18,7 +18,7 @@ import { Visibility, VisibilityOff } from "@mui/icons-material";
 import ClearIcon from '@mui/icons-material/Clear';
 import PersonIcon from "@mui/icons-material/Person";
 import MailOutlineIcon from "@mui/icons-material/MailOutline";
-import logo from "../assets/logo.png";
+import logo from "../assets/1.png";
 import { tokens } from "../theme";
 import { useNavigate } from "react-router-dom"; // React Router kullanımı için
 import { AuthContext } from "../context/AuthContext"; // AuthContext kullanımı için
@@ -341,7 +341,7 @@ export const LoginForm = () => {
         width: "100vw",
         background: `linear-gradient(to right, ${colors.primary[700]}, ${colors.primary[400]})`,
         flexDirection: "column",
-        padding: isMobile ? 2 : isTablet ? 3 : 4, // Adjust padding based on device type
+        padding: isMobile ? 2 : isTablet ? 3 : 4, 
       }}
     >
       {loading ? (
@@ -361,8 +361,8 @@ export const LoginForm = () => {
               src={logo}
               alt="Logo"
               style={{
-                maxWidth: isMobile ? "70%" : isTablet ? "60%" : "400px",
-                maxHeight: "150px",
+                maxWidth: isMobile ? "70%" : isTablet ? "60%" : "650px",
+                maxHeight: "220px",
               }}
             />
           </Box>
