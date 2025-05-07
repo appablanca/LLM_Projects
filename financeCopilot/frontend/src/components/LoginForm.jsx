@@ -12,8 +12,10 @@ import {
   InputAdornment,
   Checkbox,
   FormControlLabel,
+  Modal,
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
+import ClearIcon from '@mui/icons-material/Clear';
 import PersonIcon from "@mui/icons-material/Person";
 import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import logo from "../assets/logo.png";
@@ -23,6 +25,8 @@ import { AuthContext } from "../context/AuthContext"; // AuthContext kullanımı
 import Loading from "./Loading";
 import LoadingAnimation from "./LoadingAnimation";
 import { useDeviceType } from "../hooks/useDeviceType";
+import KVKK from "./KVKK";
+import AçıkRızaMetni from "./AçıkRızaMetni";
 
 export const LoginForm = () => {
   const [isSignIn, setIsSignIn] = useState(true);
@@ -37,6 +41,8 @@ export const LoginForm = () => {
   const [showPassword, setShowPassword] = useState(false); // Şifre görünürlüğü durumu
   const [rememberMe, setRememberMe] = useState(false);
   const [kvkkApproved, setKvkkApproved] = useState(false);
+  const [openKvkkModal, setOpenKvkkModal] = useState(false);
+  const [openRizaModal, setOpenRizaModal] = useState(false);
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate(); // Yönlendirme için kullanılır
@@ -207,6 +213,7 @@ export const LoginForm = () => {
     try {
       setLoading(true);
       const response = await login(email, password, rememberMe);
+      console.log("response", response);
       if (response) {
         toast.success("Login successful! You are being redirected...", {
           position: "top-right",
@@ -253,6 +260,7 @@ export const LoginForm = () => {
     try {
       setLoading(true);
       const response = await register(email, name, surname, password);
+      console.log("response", response);
       if (response === "User created") {
         toast.success("Registration successful! You can log in...", {
           position: "top-right",
@@ -363,7 +371,7 @@ export const LoginForm = () => {
           <Box
             sx={{
               width: "90%",
-              maxWidth: isMobile ? "300px" : isTablet ? "700px" : "1200px",
+              maxWidth: isMobile ? "250px" : isTablet ? "650px" : "850px",
               display: "flex",
               flexDirection: isMobile ? "column" : "row",
               backgroundColor: "#fff",
@@ -397,7 +405,7 @@ export const LoginForm = () => {
                   : "Sign up"}
               </Typography>
               <TextField
-                label="E-mail"
+                label="E-Mail"
                 variant="outlined"
                 fullWidth
                 value={email}
@@ -458,7 +466,7 @@ export const LoginForm = () => {
               />
               {!isSignIn && !isForgotPassword && (
                 <TextField
-                  label="E-mail Repeat"
+                  label="E-Mail Repeat"
                   variant="outlined"
                   fullWidth
                   error={!!emailMismatch}
@@ -783,23 +791,33 @@ export const LoginForm = () => {
                     />
                   }
                   label={
-                    <Typography variant="body2" sx={{ color: "black" }}>
-                      <strong>
-                      I consent to the processing of my personal data.
-                      </strong>{" "}
-                      <a href="/kvkk" target="_blank" rel="noopener noreferrer">
-                        KVKK Aydınlatma Metni
-                      </a>{" "}
-                      and{" "}
-                      <a
-                        href="/acik-riza"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Açık Rıza Metni
-                      </a>
-                      'ni read and accept the terms.
-                    </Typography>
+                    <>
+                      <Typography variant="body2" sx={{ color: "black" }}>
+                        <strong>I consent to the processing of my personal data.</strong>{" "}
+                        <span
+                          style={{ textDecoration: "underline", cursor: "pointer" }}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setOpenKvkkModal(true);
+                          }}
+                        >
+                          KVKK Aydınlatma Metni
+                        </span>{" "}
+                        and{" "}
+                        <span
+                          style={{ textDecoration: "underline", cursor: "pointer" }}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setOpenRizaModal(true);
+                          }}
+                        >
+                          Açık Rıza Metni
+                        </span>{" "}
+                        have been read and accepted.
+                      </Typography>
+                    </>
                   }
                   sx={{ alignItems: "flex-start", marginBottom: 1 }}
                 />
@@ -906,8 +924,104 @@ export const LoginForm = () => {
               </Button>
             </Box>
           </Box>
+          {/* Insert modals at the very end of the fragment */}
+          <Modal open={openKvkkModal} onClose={() => setOpenKvkkModal(false)}>
+            <Box
+              sx={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                bgcolor: "background.paper",
+                boxShadow: 24,
+                p: 4,
+                maxWidth: "600px",
+                width: "90%",
+                borderRadius: 2,
+                maxHeight: "90vh",
+                overflowY: "auto",
+              }}
+            >
+              <KVKK />
+            </Box>
+          </Modal>
+
+          <Modal open={openRizaModal} onClose={() => setOpenRizaModal(false)}>
+            <Box
+              sx={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                bgcolor: "background.paper",
+                boxShadow: 24,
+                p: 4,
+                maxWidth: "600px",
+                width: "90%",
+                borderRadius: 2,
+                maxHeight: "90vh",
+                overflowY: "auto",
+              }}
+            >
+              <AçıkRızaMetni />
+            </Box>
+          </Modal>
         </>
       )}
+      {/* KVKK Modal */}
+      <Modal open={openKvkkModal} onClose={() => setOpenKvkkModal(false)}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            bgcolor: "background.paper",
+            boxShadow: 24,
+            p: 4,
+            maxWidth: "600px",
+            width: "90%",
+            borderRadius: 2,
+            maxHeight: "90vh",
+            overflowY: "auto",
+          }}
+        >
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+            <Typography variant="h6">KVKK Aydınlatma Metni</Typography>
+            <IconButton onClick={() => setOpenKvkkModal(false)}>
+              <ClearIcon />
+            </IconButton>
+          </Box>
+          <KVKK />
+        </Box>
+      </Modal>
+      {/* Açık Rıza Modal */}
+      <Modal open={openRizaModal} onClose={() => setOpenRizaModal(false)}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            bgcolor: "background.paper",
+            boxShadow: 24,
+            p: 4,
+            maxWidth: "600px",
+            width: "90%",
+            borderRadius: 2,
+            maxHeight: "90vh",
+            overflowY: "auto",
+          }}
+        >
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+            <Typography variant="h6">Açık Rıza Metni</Typography>
+            <IconButton onClick={() => setOpenRizaModal(false)}>
+              <ClearIcon />
+            </IconButton>
+          </Box>
+          <AçıkRızaMetni />
+        </Box>
+      </Modal>
     </Box>
   );
 };
