@@ -10,16 +10,17 @@ import {
 import { useFormik } from "formik";
 import * as yup from "yup";
 import { tokens } from "./../theme";
-
+import { sendSurvey } from "../util/api";
+import { toast } from "react-toastify";
 const validationSchema = yup.object({
   age: yup
     .number()
-    .required("Gerekli")
+    .required("Required")
     .min(18, "18 yaşından büyük olmalısınız"),
-  income: yup.number().required("Gerekli"),
-  housing: yup.string().required("Gerekli"),
-  maritalStatus: yup.string().required("Gerekli"),
-  riskTolerance: yup.string().required("Gerekli"),
+  income: yup.number().required("Required"),
+  housing: yup.string().required("Required"),
+  maritalStatus: yup.string().required("Required"),
+  riskTolerance: yup.string().required("Required"),
   children: yup
     .number()
     .transform((value, originalValue) =>
@@ -33,7 +34,7 @@ const validationSchema = yup.object({
     }),
 });
 
-const UserSurveyForm = ({ onSubmit }) => {
+const UserSurveyForm = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
@@ -45,10 +46,68 @@ const UserSurveyForm = ({ onSubmit }) => {
       maritalStatus: "",
       riskTolerance: "",
       children: "",
+      rent: "", // EKLE BUNU
     },
     validationSchema,
     onSubmit: (values) => {
-      onSubmit(values); // callback to parent
+      const surveyData = [
+        { name: "Age", content: String(values.age) },
+        { name: "Income", content: String(values.income) },
+        { name: "Housing", content: values.housing },
+        {
+          name: "Rent",
+          content:
+            values.housing === "renter" ? String(values.rent || "0") : "N/A",
+        },
+        { name: "Marital Status", content: values.maritalStatus },
+        {
+          name: "Children",
+          content:
+            values.maritalStatus === "married"
+              ? String(values.children || "0")
+              : "N/A",
+        },
+        { name: "Risk Tolerance", content: values.riskTolerance },
+      ];
+
+      sendSurvey(surveyData)
+        .then((response) => {
+          if (response?.message === "Survey data saved successfully") {
+            toast.success("Survey submitted successfully!", {
+              position: "top-right",
+              autoClose: 2000,
+              hideProgressBar: true,
+              closeOnClick: true,
+              pauseOnHover: false,
+              draggable: false,
+            });
+            sessionStorage.setItem("surveyCompleted", "true");
+          } else {
+            toast.error(
+              "Survey submission failed. Please try again.",{
+                position: "top-right",
+                autoClose: 2000,
+                hideProgressBar: true,
+                closeOnClick: true,
+                pauseOnHover: false,
+                draggable: false,
+              }
+            );
+          }
+        })
+        .catch((error) => {
+          console.error("🔥 ERROR in sendSurvey catch block");
+          console.error("Error submitting survey:", error);
+          console.error("Server response:", error.response?.data);
+          toast.error("Error submitting survey", {
+            position: "top-right",
+            autoClose: 2000,
+            hideProgressBar: true,
+            closeOnClick: true,
+            pauseOnHover: false,
+            draggable: false,
+          });
+        });
     },
   });
 

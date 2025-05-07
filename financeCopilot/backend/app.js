@@ -50,7 +50,7 @@ const userPanelRoute = require("./src/routes/userPanel.js");
 app.use(bodyParser.urlencoded({ extended: false }));
 
 const corsOptions = {
-  //origin: "http://localhost:3000",
+  origin: "http://localhost:3000",
   credentials: true,
 };
 app.use(cors(corsOptions));
@@ -74,7 +74,7 @@ app.use(session({
       maxAge: 24 * 60 * 60 * 1000,
       httpOnly: true,
       secure: false,
-      sameSite: 'none',
+      sameSite: 'lax',
     }
   }
 ));

@@ -4,7 +4,7 @@ const api = "http://localhost:8080";
 
 async function postLogin(email, password, rememberMe) {
   try {
-    const response = await axiosInstance.post(`${api}/login/postLogin`, {
+    const response = await axiosInstance.post(`/login/postLogin`, {
       email: email,
       password: password,
       rememberMe: rememberMe,
@@ -27,7 +27,7 @@ export function flogin(email, password, rememberMe) {
 
 async function postRegister(email, name, surname, password) {
   try {
-    const response = await axiosInstance.post(`${api}/login/postRegister`, {
+    const response = await axiosInstance.post(`/login/postRegister`, {
       email: email,
       name: name,
       surname: surname,
@@ -51,7 +51,7 @@ export function fregister(email, name, surname, password) {
 
 async function getLogout() {
   try {
-    const response = await axiosInstance.get(`${api}/login/getLogout`);
+    const response = await axiosInstance.get(`/login/getLogout`);
     return response.data;
   } catch (error) {
     console.error(
@@ -69,22 +69,42 @@ export function flogut() {
 }
 
 async function isUserAuthenticated() {
-    try {
-      const response = await axiosInstance.get(`${api}/login/isAuth`);
-      console.log("response", response);
-      return response.data;
-    } catch (error) {
-      console.error(
-        "Error checking auth:",
-        error.response ? error.response.data : error.message
-      );
-      throw new Error(
-        "Failed to check auth: " +
-          (error.response ? error.response.data : error.message)
-      );
-    }
+  try {
+    console.log("Calling /login/isAuth...");
+    const response = await axiosInstance.get("/login/isAuth");
+    console.log("isAuth response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ isAuth hatası:", error);
+    console.error("❌ response içeriği:", error.response?.data);
+    throw new Error(
+      "Failed to check auth: " +
+        (error.response ? error.response.data : error.message)
+    );
   }
-  export function isAuth() {
-    return isUserAuthenticated();
+}
+export function isAuth() {
+  return isUserAuthenticated();
+}
+
+async function sendUserSurvey(surveyData) {
+  try {
+    const response = await axiosInstance.post(`/userPanel/doSurvey`,{
+      surveyData: surveyData,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error getting user survey:",
+      error.response ? error.response.data : error.message
+    );
+    throw new Error(
+      "Failed to get user survey: " +
+        (error.response ? error.response.data : error.message)
+    );
   }
-  
+}
+
+export function sendSurvey(surveyData) {
+  return sendUserSurvey(surveyData);
+}

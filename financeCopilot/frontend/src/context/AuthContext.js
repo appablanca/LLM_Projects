@@ -74,12 +74,12 @@ const AuthProvider = ({ children }) => {
   useEffect(() => {
     const fetchSession = async () => {
       try {
+        console.log("Session kontrolü yapılıyor...");
         const res = await isAuth();
+        console.log("isAuth response:", res);
         if (res && res.user) {
           setUser(res.user);
-          console.log("res.user", res.user);
           setIsAuthenticatedUser(true);
-          console.log("isAuthenticatedUser", isAuthenticatedUser);
 
         } else {
           setUser(null);
@@ -95,9 +95,9 @@ const AuthProvider = ({ children }) => {
     };
 
     fetchSession();
-  }, []); // Boş dependency array ile sadece component mount olduğunda çalışır
+  }, []); 
 
-  // isAuthenticatedUser değiştiğinde log at
+
   useEffect(() => {
     console.log("isAuthenticatedUser changed:", isAuthenticatedUser);
   }, [isAuthenticatedUser]);
