@@ -1,11 +1,9 @@
-import fitz  # PyMuPDF
+import fitz
 import os
 
-# Giriş ve çıkış klasör yolları
 GIRDI_KLASORU = "girdi_klasoru"
 CIKTI_KLASORU = "cikti_klasoru"
 
-# PDF'ten metin çek
 def extract_text_from_pdf(pdf_path):
     doc = fitz.open(pdf_path)
     all_text = ""
@@ -13,7 +11,6 @@ def extract_text_from_pdf(pdf_path):
         all_text += page.get_text()
     return all_text
 
-# Ana işlem
 def main():
     if not os.path.exists(CIKTI_KLASORU):
         os.makedirs(CIKTI_KLASORU)
@@ -28,11 +25,11 @@ def main():
                 output_path = os.path.join(CIKTI_KLASORU, output_filename)
                 with open(output_path, "w", encoding="utf-8") as f:
                     f.write(text)
-                print(f"  ✔ Kaydedildi: {output_filename}")
+                print(f"Kaydedildi: {output_filename}")
             else:
-                print(f"  ⚠ PDF boş veya metin çıkarılamadı: {filename}")
+                print(f"PDF boş veya metin çıkarılamadı: {filename}")
         else:
-            print(f"  ⏩ Atlandı (PDF değil): {filename}")
+            print(f"Atlandı (PDF değil): {filename}")
 
 if __name__ == "__main__":
     main()
