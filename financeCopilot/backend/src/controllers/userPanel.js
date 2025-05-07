@@ -1,0 +1,45 @@
+const User = require("../models/users");
+
+exports.doSurvey = async (req, res) => {
+  if (!req.session || !req.session.user) {
+    return res
+      .status(401)
+      .json({ message: "Unauthorized: User session not found" });
+  }
+
+  const userId = req.session.user.id;
+  const surveyData = req.body.surveyData;
+
+  if (!Array.isArray(surveyData)) {
+    return res
+      .status(400)
+      .json({ message: "Invalid survey data format. Expected an array." });
+  }
+
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const newFields = surveyData.map((item) => ({
+      name: item.name,
+      content: item.content,
+      deleted: 0,
+    }));
+
+    user.fields.push(...newFields);
+    user.isSurvey = 1;
+
+    await user.save();
+
+    return res.status(200).json({
+      message: "Survey data saved successfully",
+      addedFields: newFields.length,
+    });
+  } catch (error) {
+    console.error("Error saving survey data:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
