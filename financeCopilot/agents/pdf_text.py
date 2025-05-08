@@ -11,6 +11,14 @@ def extract_text_from_pdf(pdf_path):
         all_text += page.get_text()
     return all_text
 
+def get_first_txt_from_output_folder():
+    txt_files = [f for f in os.listdir(CIKTI_KLASORU) if f.endswith(".txt")]
+    if not txt_files:
+        raise FileNotFoundError("cikti_klasoru içinde .txt dosyası yok.")
+    first_txt_path = os.path.join(CIKTI_KLASORU, txt_files[0])
+    with open(first_txt_path, "r", encoding="utf-8") as f:
+        return f.read()
+    
 def main():
     if not os.path.exists(CIKTI_KLASORU):
         os.makedirs(CIKTI_KLASORU)

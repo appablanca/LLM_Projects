@@ -1,0 +1,30 @@
+# Google Gemini için gerekli paket
+google-generativeai>=0.4.0
+
+# LangChain (LLM orkestrasyonu için)
+langchain>=0.1.13
+
+# LangChain'de Gemini kullanımı için gerekli backend
+langchain-google-genai>=0.0.5
+
+# JSON işleme ve veri temizliği
+orjson>=3.9.7
+
+# Ortam değişkenlerini yönetmek için
+python-dotenv>=1.0.1
+
+# JSON verisini güzel yazdırmak için (isteğe bağlı)
+rich>=13.7.0
+
+# OCR ve Görüntü İşleme
+pillow
+pytesseract
+
+# PDF İşleme
+PyMuPDF
+
+# Ortak kullanım için
+requests
+
+# LangChain topluluğu için gerekli paketler
+langchain_community
