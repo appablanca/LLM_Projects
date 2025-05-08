@@ -2,72 +2,187 @@ import os
 import json
 import google.generativeai as genai
 
-GOOGLE_API_KEY = "AIzaSyC9Eh9t8QeLoPKI7d8Sw6x0qr4qVyT9QH4"
-genai.configure(api_key=GOOGLE_API_KEY)
+def structure_text_to_json():
+    messages = []
 
-INPUT_FOLDER = "cikti_klasoru"
-OUTPUT_FOLDER = "structured_output"
+    GOOGLE_API_KEY = "AIzaSyC9Eh9t8QeLoPKI7d8Sw6x0qr4qVyT9QH4"
+    genai.configure(api_key=GOOGLE_API_KEY)
 
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+    INPUT_FOLDER = "cikti_klasoru"
+    OUTPUT_FOLDER = "structured_output"
 
-txt_files = [f for f in os.listdir(INPUT_FOLDER) if f.endswith(".txt")]
-if not txt_files:
-    raise FileNotFoundError("cikti_klasoru içinde .txt dosyası bulunamadı.")
-input_path = os.path.join(INPUT_FOLDER, txt_files[0])
+    os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-with open(input_path, "r", encoding="utf-8") as f:
-    raw_text = f.read()
+    txt_files = [f for f in os.listdir(INPUT_FOLDER) if f.endswith(".txt")]
+    if not txt_files:
+        return ["Error: No .txt file found in the input folder."]
 
-model = genai.GenerativeModel("gemini-2.0-flash")
+    input_path = os.path.join(INPUT_FOLDER, txt_files[0])
 
-system_prompt = f"""
-Sen bir metin yapılandırma asistanısın. Aşağıda verilen ham metni incele ve bunu aşağıdaki JSON şemasına göre formatla.
+    with open(input_path, "r", encoding="utf-8") as f:
+        raw_text = f.read()
 
-Kurallar:
-1. "türü", "musteri_bilgileri", "islemler", "kart_limiti", "kategori_toplamlari" ana alanlarını mutlaka oluştur.
-2. Tüm para değerlerini TL olarak bırak ve aynen aktar (virgül ve nokta biçimleri korunmalı).
-3. "islemler" kısmındaki her satırı dikkatli ayır: tarih, açıklama, tutar ve varsa maxipuan.
-4. "kategori_toplamlari" kısmında verilen kategorilere göre toplamları sınıflandır. Kategori listesi aşağıda.
-5. Bilgi eksikse null değeri kullan.
-6. JSON biçimi geçerli ve düzenli olmalı.
+    model = genai.GenerativeModel("gemini-2.0-flash")
 
-Kategoriler:
-["yeme_icme", "giyim_kozmetik", "abonelik", "market", "ulasim", "eglence", "kirtasiye_kitap", "teknoloji", "fatura_odeme", "egitim", "saglik", "nakit_cekme", "diger"]
+    system_prompt = f"""
+You are a text structuring assistant. Read the raw text below and format it according to the JSON schema provided.
 
-JSON Formatı:
+Instructions:
+1. Always include the fields: "type", "customer_info", "transactions", "card_limit", and "category_totals".
+2. Keep all currency values exactly as they appear in Turkish Lira (TL), including commas and periods.
+3. In the "transactions" list, format each item with the following fields in this exact order:
+   - date
+   - spending_category (must match one of the given categories)
+   - description (clean and readable wording with proper spacing)
+   - amount
+4. Format descriptions by inserting appropriate spaces between merged words, brand names, and locations. For example:
+   "MIGROSZIYAGOKALPANKARATR" should become "MIGROS ZIYA GOKALP ANKARA TR".
+5. **Exclude any transactions related to reward points**. That means:
+   - If a transaction includes words like "puan", "PUAN", or "MaxiPuan" in the description,
+   - Do not include this transaction in the final JSON output.
+6. In "card_limit", include only:
+   - total_card_limit
+   - remaining_card_limit
+7. Categorize totals under the given list of categories based on transaction type.
+8. Use null for any missing or unknown values.
+9. Output must be valid, properly formatted JSON.
+10. Exclude all transactions that are **point-related financial operations** — that is, when the transaction itself is a reward point usage or a point top-up. 
+These transactions must be **excluded from the output** entirely.
+
+Examples of such operations to exclude:
+- Point usage:
+  - “MaxiPuan Used”
+  - “KULLANILAN PUAN”
+  - “PUAN USED”
+  - “REWARD POINT REDEEMED”
+  - “-80,45 TL” with reference to point usage
+- Point top-ups:
+  - “%50 PUAN YÜKLEME”
+  - “MAXIMUM GENÇ MARKET PUAN”
+  - “BONUS YÜKLEME”
+  - “PUAN YÜKLEME”
+  - “REWARD POINT ADDED”
+  - Any transaction that indicates loading or redeeming points instead of spending money.
+
+**Important**: These are not real spending and should be skipped entirely.
+
+11. For normal purchase transactions that **mention earned reward points**, such as:
+  - “KAZANILANMAXİPUAN: 0,02”
+  - “EARNED REWARD POINTS: 0.05”
+  - “KAZANILAN PUAN”
+  - “BONUS KAZANIMI”
+
+Include these transactions, but **remove any reward point references** from the `description` field.  
+The description should only contain relevant and clean purchase information (e.g., store name, location, brand, etc.), **not reward metadata**.
+
+Examples:
+- "CHILLINCAFEANKARATR KAZANILANMAXİPUAN:0,02" → "CHILLIN CAFE ANKARA TR"
+- "BIM A.S./U633/EMEK4 //ANKARATR KAZANILAN PUAN: 0.15" → "BIM A.S./U633/EMEK4 //ANKARA TR"
+
+12. Exclude transactions that represent **money transfers** or account operations — these are not actual spending.
+
+Examples of such transactions to exclude:
+- Any description that includes:
+  - “HESAPTAN AKTARIM”
+  - “TRANSFER”
+  - “HAVALE”
+  - “EFT”
+  - “FAST”
+  - “PARA AKTARIMI”
+  - “MONEY MOVEMENT”
+- These are internal account actions and should **not** be included in the `transactions` list.
+
+
+Allowed spending categories:
+[
+  "food_drinks",
+  "clothing_cosmetics",
+  "subscription",
+  "groceries",
+  "transportation",
+  "entertainment",
+  "stationery_books",
+  "technology",
+  "bill_payment",
+  "education",
+  "health",
+  "cash_withdrawal",
+  "other"
+]
+
+Target JSON Structure:
 {{
-  "türü": "fiş/fatura/hesap dökümü",
-  "musteri_bilgileri": {{
-    "ad_soyad": "MELİSA SUBAŞI"
+  "type": "receipt/invoice/account statement",
+  "customer_info": {{
+    "full_name": "MELİSA SUBAŞI"
   }},
-  "islemler": [...],
-  "kart_limiti": {{
-    "toplam_kart_limiti": "2.000,00 TL",
+  "transactions": [
+    {{
+      "date": "01.04.2024",
+      "spending_category": "groceries",
+      "description": "MIGROS ZIYA GOKALP ANKARA TR",
+      "amount": "215,75 TL"
+    }},
     ...
+  ],
+  "card_limit": {{
+    "total_card_limit": "2.000,00 TL",
+    "remaining_card_limit": "851,50 TL"
   }},
-  "kategori_toplamlari": {{
-    "yeme_icme": "1.819,00 TL",
+  "category_totals": {{
+    "groceries": "1.012,50 TL",
     ...
   }}
 }}
-Şu metni dönüştür:
+
+Convert this raw text:
 {raw_text}
 """
-response = model.generate_content(system_prompt)
 
-cleaned_text = response.text.strip().strip("`").strip()
-if cleaned_text.startswith("json"):
-    cleaned_text = cleaned_text[4:].strip()
 
-try:
-    json_data = json.loads(cleaned_text)
-except json.JSONDecodeError as e:
-    print("JSON format hatası:", e)
-    print("Yanıt içeriği:\n", response.text)
-    raise
 
-output_path = os.path.join(OUTPUT_FOLDER, "output.json")
-with open(output_path, "w", encoding="utf-8") as f:
-    json.dump(json_data, f, ensure_ascii=False, indent=2)
+    try:
+        response = model.generate_content(system_prompt)
 
-print(f"JSON dosyası başarıyla kaydedildi: {output_path}")
+        # --- CLEANING ---
+        raw_response = response.text.strip()
+
+        # Markdown block varsa ayıkla
+        if "```json" in raw_response:
+            cleaned_text = raw_response.split("```json")[1].split("```")[0].strip()
+        else:
+            cleaned_text = raw_response.strip("`").strip()
+
+        # Geçici yer tutucular ("..." gibi) varsa kaldır
+        cleaned_text = cleaned_text.replace("...", "")
+
+        # JSON PARSING
+        try:
+            json_data = json.loads(cleaned_text)
+        except json.JSONDecodeError as e:
+            # Model çıktısını hata halinde kaydet
+            raw_out_path = os.path.join(OUTPUT_FOLDER, "raw_model_output.txt")
+            with open(raw_out_path, "w", encoding="utf-8") as f:
+                f.write(raw_response)
+            messages.append("JSON format error:")
+            messages.append(str(e))
+            messages.append(f"Raw model output saved to: {raw_out_path}")
+            return messages
+
+        # Save valid JSON
+        output_path = os.path.join(OUTPUT_FOLDER, "output.json")
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(json_data, f, ensure_ascii=False, indent=2)
+
+        messages.append(f"✅ JSON file successfully saved to: {output_path}")
+
+    except Exception as e:
+        messages.append(f"❌ An unexpected error occurred: {e}")
+
+    return messages
+
+# Example usage
+if __name__ == "__main__":
+    results = structure_text_to_json()
+    for msg in results:
+        print(msg)

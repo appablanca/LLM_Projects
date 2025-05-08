@@ -1,161 +1,135 @@
 {
-  "türü": "hesap dökümü",
-  "musteri_bilgileri": {
-    "ad_soyad": "MELİSA SUBAŞI"
+  "type": "account statement",
+  "customer_info": {
+    "full_name": "MELİSA SUBAŞI"
   },
-  "islemler": [
+  "transactions": [
     {
-      "tarih": "08/02/2025",
-      "aciklama": "2530ALSANCAKKULTURIZMIRTRKAZANILANMAXİPUAN:0,03",
-      "tutar": "213,90",
-      "maxipuan": "0,03"
+      "date": "08/02/2025",
+      "spending_category": "other",
+      "description": "2530 ALSANCAK KULTUR IZMIR TR",
+      "amount": "213,90 TL"
     },
     {
-      "tarih": "08/02/2025",
-      "aciklama": "GURMARATAKENT129IZMIRTRKAZANILANMAXİPUAN:0,95",
-      "tutar": "189,75",
-      "maxipuan": "0,95"
+      "date": "08/02/2025",
+      "spending_category": "other",
+      "description": "GURMAR ATAKENT 129 IZMIR TR",
+      "amount": "189,75 TL"
     },
     {
-      "tarih": "09/02/2025",
-      "aciklama": "3391-161329HESAPTANAKTARIM3391İNTERAKTİF",
-      "tutar": "- 1.037,97",
-      "maxipuan": null
+      "date": "11/02/2025",
+      "spending_category": "technology",
+      "description": "ASİS ELEKTRONİK ANKARA TR",
+      "amount": "305,99 TL"
     },
     {
-      "tarih": "11/02/2025",
-      "aciklama": "ASİSELEKTRONİKANKARATRKAZANILANMAXİPUAN:0,03",
-      "tutar": "305,99",
-      "maxipuan": "0,03"
+      "date": "11/02/2025",
+      "spending_category": "other",
+      "description": "BARAN GRUP ANKARA TR",
+      "amount": "65,00 TL"
     },
     {
-      "tarih": "11/02/2025",
-      "aciklama": "MIGROSZIYAGOKALPANKARATR KULLANILANMAXİPUAN:80,45",
-      "tutar": "-80,45",
-      "maxipuan": null
+      "date": "13/02/2025",
+      "spending_category": "other",
+      "description": "OTOMATCI ANKARA OTOMAT ANKARA TR",
+      "amount": "10,00 TL"
     },
     {
-      "tarih": "11/02/2025",
-      "aciklama": "BARANGRUP ANKARATR",
-      "tutar": "65,00",
-      "maxipuan": null
+      "date": "13/02/2025",
+      "spending_category": "food_drinks",
+      "description": "CHILLIN CAFE ANKARA TR",
+      "amount": "270,00 TL"
     },
     {
-      "tarih": "11/02/2025",
-      "aciklama": "MAXIMUMGENCMARKET%50PUANYÜKLEME",
-      "tutar": "150,00",
-      "maxipuan": null
+      "date": "14/02/2025",
+      "spending_category": "food_drinks",
+      "description": "MAYDONOZ DÖNER B.EVLER ANKARA TR",
+      "amount": "265,00 TL"
     },
     {
-      "tarih": "13/02/2025",
-      "aciklama": "OTOMATCI ANKARAOTOMATANKARATR",
-      "tutar": "10,00",
-      "maxipuan": null
+      "date": "14/02/2025",
+      "spending_category": "groceries",
+      "description": "BIM A.S./U633/EMEK4 //ANKARA TR",
+      "amount": "22,50 TL"
     },
     {
-      "tarih": "13/02/2025",
-      "aciklama": "CHİLLİNCAFEANKARATRKAZANILANMAXİPUAN:0,02",
-      "tutar": "270,00",
-      "maxipuan": "0,02"
+      "date": "14/02/2025",
+      "spending_category": "stationery_books",
+      "description": "EZELESERLER KITAP YAY ANKARA TR",
+      "amount": "257,50 TL"
     },
     {
-      "tarih": "14/02/2025",
-      "aciklama": "MAYDONOZDÖNERB.EVLERANKARATRKAZANILANMAXİPUAN:0,02",
-      "tutar": "265,00",
-      "maxipuan": "0,02"
+      "date": "16/02/2025",
+      "spending_category": "food_drinks",
+      "description": "ANGORA COFFE ANKARA TR",
+      "amount": "207,50 TL"
     },
     {
-      "tarih": "14/02/2025",
-      "aciklama": "BIM A.S./U633/EMEK4 //ANKARATR",
-      "tutar": "22,50",
-      "maxipuan": null
+      "date": "16/02/2025",
+      "spending_category": "other",
+      "description": "11655 CANKAYA CEMAL GUR ANKARA TR",
+      "amount": "160,75 TL"
     },
     {
-      "tarih": "14/02/2025",
-      "aciklama": "EZELESERLERKITAPYAYANKARATRKAZANILANMAXİPUAN:0,02",
-      "tutar": "257,50",
-      "maxipuan": "0,02"
+      "date": "16/02/2025",
+      "spending_category": "groceries",
+      "description": "BİZİM ÇARŞI ANKARA TR",
+      "amount": "160,00 TL"
     },
     {
-      "tarih": "16/02/2025",
-      "aciklama": "ANGORACOFFEANKARATRKAZANILANMAXİPUAN:0,02",
-      "tutar": "207,50",
-      "maxipuan": "0,02"
+      "date": "17/02/2025",
+      "spending_category": "other",
+      "description": "OTOMATCI ANKARA OTOMAT ANKARA TR",
+      "amount": "10,00 TL"
     },
     {
-      "tarih": "16/02/2025",
-      "aciklama": "ISTEMAARSQUAREAVMISTANBUL TRKULLANILANMAXİPUAN:198,00",
-      "tutar": "-198,00",
-      "maxipuan": null
+      "date": "18/02/2025",
+      "spending_category": "food_drinks",
+      "description": "CHILLIN CAFE ANKARA TR",
+      "amount": "75,00 TL"
     },
     {
-      "tarih": "16/02/2025",
-      "aciklama": "11655CANKAYACEMALGURANKARATRKAZANILANMAXİPUAN:0,02",
-      "tutar": "160,75",
-      "maxipuan": "0,02"
+      "date": "18/02/2025",
+      "spending_category": "other",
+      "description": "OTOMATCI ANKARA OTOMAT ANKARA TR",
+      "amount": "10,00 TL"
     },
     {
-      "tarih": "16/02/2025",
-      "aciklama": "BİZİM ÇARŞIANKARATRKAZANILANMAXİPUAN:0,01",
-      "tutar": "160,00",
-      "maxipuan": "0,01"
+      "date": "18/02/2025",
+      "spending_category": "other",
+      "description": "OTOMATCI ANKARA OTOMAT ANKARA TR",
+      "amount": "10,00 TL"
     },
     {
-      "tarih": "17/02/2025",
-      "aciklama": "OTOMATCI ANKARAOTOMATANKARATR",
-      "tutar": "10,00",
-      "maxipuan": null
+      "date": "19/02/2025",
+      "spending_category": "other",
+      "description": "OTOMATCI ANKARA OTOMAT ANKARA TR",
+      "amount": "10,00 TL"
     },
     {
-      "tarih": "18/02/2025",
-      "aciklama": "CHİLLİNCAFEANKARATR",
-      "tutar": "75,00",
-      "maxipuan": null
-    },
-    {
-      "tarih": "18/02/2025",
-      "aciklama": "OTOMATCI ANKARAOTOMATANKARATR",
-      "tutar": "10,00",
-      "maxipuan": null
-    },
-    {
-      "tarih": "18/02/2025",
-      "aciklama": "OTOMATCI ANKARAOTOMATANKARATR",
-      "tutar": "10,00",
-      "maxipuan": null
-    },
-    {
-      "tarih": "19/02/2025",
-      "aciklama": "OTOMATCI ANKARAOTOMATANKARATR",
-      "tutar": "10,00",
-      "maxipuan": null
-    },
-    {
-      "tarih": "07/02/2025",
-      "aciklama": "PARAM//YEMEKSEPETIPAYISTANBULTRKAZANILANMAXİPUAN:0,02",
-      "tutar": "208,99",
-      "maxipuan": "0,02"
+      "date": "07/02/2025",
+      "spending_category": "food_drinks",
+      "description": "PARAM//YEMEK SEPETI PAY ISTANBUL TR",
+      "amount": "208,99 TL"
     }
   ],
-  "kart_limiti": {
-    "toplam_kart_limiti": "2.000,00 TL",
-    "kullanilabilir_musteri_limiti": "172,76 TL",
-    "nakit_cekme_limiti": "1.000,00 TL",
-    "kullanilabilir_nakit_cekme_limiti": "172,76 TL"
+  "card_limit": {
+    "total_card_limit": "2.000,00 TL",
+    "remaining_card_limit": "172,76 TL"
   },
-  "kategori_toplamlari": {
-    "yeme_icme": "818,99 TL",
-    "giyim_kozmetik": null,
-    "abonelik": null,
-    "market": "182,50 TL",
-    "ulasim": null,
-    "eglence": null,
-    "kirtasiye_kitap": "257,50 TL",
-    "teknoloji": "305,99 TL",
-    "fatura_odeme": null,
-    "egitim": null,
-    "saglik": null,
-    "nakit_cekme": null,
-    "diger": "305,00 TL"
+  "category_totals": {
+    "food_drinks": "816,49 TL",
+    "clothing_cosmetics": null,
+    "subscription": null,
+    "groceries": "182,50 TL",
+    "transportation": null,
+    "entertainment": null,
+    "stationery_books": "257,50 TL",
+    "technology": "305,99 TL",
+    "bill_payment": null,
+    "education": null,
+    "health": null,
+    "cash_withdrawal": null,
+    "other": "145,75 TL"
   }
 }
