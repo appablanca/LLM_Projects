@@ -46,7 +46,7 @@ const store = new mongodbStore({
 
 const loginRoute = require("./src/routes/login.js");
 const userPanelRoute = require("./src/routes/userPanel.js");
-
+const generatorRoute = require("./src/routes/generator.js");
 app.use(bodyParser.urlencoded({ extended: false }));
 
 const corsOptions = {
@@ -87,6 +87,7 @@ app.get("/", (req, res) => {
 
 
 app.use("/userPanel", userPanelRoute);
+app.use("/generator", generatorRoute);
 app.use("/login", loginRoute);
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
