@@ -81,3 +81,31 @@ exports.fetchAllStocksFromFile = async (req, res) => {
 
   return res.status(200).json({message: "Data fetched successfully"});
 };
+
+
+exports.getStockData = async (req, res) => {
+  const { symbol } = req.body;
+
+  try {
+    const stockData = await Stock.findOne({ symbol: symbol })
+      .select("symbol data")
+      .lean();
+    if (!stockData) {
+      return res.status(404).json({ message: "Stock not found" });
+    }
+    const { symbol: stockSymbol, data } = stockData;
+    const formattedData = data.map((entry) => ({
+      date: entry.date,
+      open: entry.open,
+      high: entry.high,
+      low: entry.low,
+      close: entry.close,
+      volume: entry.volume,
+    }));
+    return res.status(200).json({ symbol: stockSymbol, data: formattedData });
+  }
+  catch (err) {
+    console.error("Error fetching stock data:", err);
+    return res.status(500).json({ message: "Failed to fetch stock data" });
+  }
+};
