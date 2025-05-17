@@ -1,43 +1,91 @@
 import os
+import json
 import requests
 import pandas as pd
 import yfinance as yf
-import json
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import google.generativeai as genai
+
 load_dotenv()
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-
-
-# Step 1: get current market prices from txt file   
-def get_current_market_prices(file_path: str):
-    with open(file_path, "r") as f:
-        symbols = [line.strip() for line in f if line.strip()]
-    return symbols
-
-currentPrices = get_current_market_prices("market_prices_output.txt")
-
-
-with open("historical_data.json", "r", encoding="utf-8") as file:
-    historicalDataJSON = json.load(file)
-
-
-
-    
+# Step 1: Kullanıcı profilini tanımla
 user_profile = {
     "age": 40,
     "risk_tolerance": "low",
     "investment_amount": 100000,
 }
 
+# Step 2: Günlük fiyatları oku
+def get_current_market_prices(file_path: str):
+    symbol_to_price = {}
+    with open(file_path, "r") as f:
+        for line in f:
+            line = line.strip()
+            if ":" in line and "$" in line:
+                try:
+                    parts = line.split(":")
+                    symbol = parts[0].strip()
+                    price = float(parts[1].replace("$", "").strip())
+                    symbol_to_price[symbol] = price
+                except ValueError:
+                    continue  # Geçersiz satırı atla
+    return symbol_to_price
 
+current_prices = get_current_market_prices("market_prices_output.txt")
 
-# Step 6: Build prompt
-limited_historical_data = dict(list(historicalDataJSON)[:3])
-limited_current_prices = currentPrices[:3]
+# Step 3: Tarihsel veriyi yükle
+with open("historical_data.json", "r", encoding="utf-8") as file:
+    historical_data = json.load(file)
+
+# Step 4: Her hissenin özetini çıkar
+def summarize_stock(symbol_data):
+    closes = [day["close"] for day in symbol_data["data"]]
+    if len(closes) < 2:
+        return None
+    return {
+        "symbol": symbol_data["symbol"],
+        "avg_close": round(sum(closes) / len(closes), 2),
+        "min_close": round(min(closes), 2),
+        "max_close": round(max(closes), 2),
+        "last_close": round(closes[-1], 2),
+        "volatility": round(max(closes) - min(closes), 2),
+        "growth_pct": round(((closes[-1] - closes[0]) / closes[0]) * 100, 2)
+    }
+
+summaries = [summarize_stock(item) for item in historical_data]
+summaries = [s for s in summaries if s is not None]
+
+# Step 5: Düşük riskli hisseleri seç (örnek kriterler: düşük volatilite + pozitif büyüme)
+low_risk_candidates = [
+    s for s in summaries if s["volatility"] < 35 and s["growth_pct"] > 0
+]
+
+# Step 6: İlk 3 tanesini seç ve güncel fiyatlarını ekle
+selected = sorted(low_risk_candidates, key=lambda x: x["volatility"])[:10]
+
+# 🔧 Eksik satır — güncel fiyatları eşle
+for s in selected:
+    s["today_price"] = current_prices.get(s["symbol"], "N/A")
+
+# Debug: Konsola yaz
+print("🧪 Selected Top 3 Low-Risk Candidates:")
+for s in selected:
+    print(f"- {s['symbol']}: Volatility={s['volatility']}, Growth={s['growth_pct']}%, LastClose={s['last_close']}, Today={s['today_price']}")
+
+# Step 7: Prompt’u oluştur
+summary_lines = "\n".join([
+    f"""
+Ticker: {s['symbol']}
+- Avg Close: {s['avg_close']} $
+- Growth (1y): {s['growth_pct']} %
+- Volatility: {s['volatility']} $
+- Last Close: {s['last_close']} $
+- Today’s Price: {s['today_price']} $
+""" for s in selected
+])
 
 prompt = f"""
 You are a conservative financial assistant recommending a specific investment portfolio.
@@ -49,10 +97,9 @@ User profile:
 - Investment horizon: 10 years
 - User prefers stable, smaller companies and wants to avoid speculative investments.
 
-This is simplified stock data:
+Below is a summary of 3 low-risk stock candidates:
 
-Historical data: {limited_historical_data}
-Current prices: {limited_current_prices}
+{summary_lines}
 
 Please recommend 2–3 stocks **from this data**, naming the tickers and explaining why they are suitable for a super-low-risk, long-term investor.
 At the end give a portfolio suggestion with the following format:
@@ -60,13 +107,9 @@ At the end give a portfolio suggestion with the following format:
 - 30% in [TICKER2]
 - 20% in [TICKER3]
 The percentage values should add up to 100%.
-The percentage values should be in the range of 0-100.
-The percantage can change but the total should be 100.
 """
 
-
-
-
+# Step 8: Gemini'den yanıt al
 response = model.generate_content(prompt)
 print("💡 Gemini's Recommendation:\n")
 print(response.text)
