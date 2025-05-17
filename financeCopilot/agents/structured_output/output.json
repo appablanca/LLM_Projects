@@ -1,0 +1,135 @@
+{
+  "type": "account statement",
+  "customer_info": {
+    "full_name": "MELİSA SUBAŞI"
+  },
+  "transactions": [
+    {
+      "date": "08/02/2025",
+      "spending_category": "other",
+      "description": "2530 ALSANCAK KULTUR IZMIR TR",
+      "amount": "213,90 TL"
+    },
+    {
+      "date": "08/02/2025",
+      "spending_category": "other",
+      "description": "GURMAR ATAKENT 129 IZMIR TR",
+      "amount": "189,75 TL"
+    },
+    {
+      "date": "11/02/2025",
+      "spending_category": "technology",
+      "description": "ASİS ELEKTRONİK ANKARA TR",
+      "amount": "305,99 TL"
+    },
+    {
+      "date": "11/02/2025",
+      "spending_category": "other",
+      "description": "BARAN GRUP ANKARA TR",
+      "amount": "65,00 TL"
+    },
+    {
+      "date": "13/02/2025",
+      "spending_category": "other",
+      "description": "OTOMATCI ANKARA OTOMAT ANKARA TR",
+      "amount": "10,00 TL"
+    },
+    {
+      "date": "13/02/2025",
+      "spending_category": "food_drinks",
+      "description": "CHILLIN CAFE ANKARA TR",
+      "amount": "270,00 TL"
+    },
+    {
+      "date": "14/02/2025",
+      "spending_category": "food_drinks",
+      "description": "MAYDONOZ DÖNER B.EVLER ANKARA TR",
+      "amount": "265,00 TL"
+    },
+    {
+      "date": "14/02/2025",
+      "spending_category": "groceries",
+      "description": "BIM A.S./U633/EMEK4 //ANKARA TR",
+      "amount": "22,50 TL"
+    },
+    {
+      "date": "14/02/2025",
+      "spending_category": "stationery_books",
+      "description": "EZELESERLER KITAP YAY ANKARA TR",
+      "amount": "257,50 TL"
+    },
+    {
+      "date": "16/02/2025",
+      "spending_category": "food_drinks",
+      "description": "ANGORA COFFE ANKARA TR",
+      "amount": "207,50 TL"
+    },
+    {
+      "date": "16/02/2025",
+      "spending_category": "other",
+      "description": "11655 CANKAYA CEMAL GUR ANKARA TR",
+      "amount": "160,75 TL"
+    },
+    {
+      "date": "16/02/2025",
+      "spending_category": "groceries",
+      "description": "BİZİM ÇARŞI ANKARA TR",
+      "amount": "160,00 TL"
+    },
+    {
+      "date": "17/02/2025",
+      "spending_category": "other",
+      "description": "OTOMATCI ANKARA OTOMAT ANKARA TR",
+      "amount": "10,00 TL"
+    },
+    {
+      "date": "18/02/2025",
+      "spending_category": "food_drinks",
+      "description": "CHILLIN CAFE ANKARA TR",
+      "amount": "75,00 TL"
+    },
+    {
+      "date": "18/02/2025",
+      "spending_category": "other",
+      "description": "OTOMATCI ANKARA OTOMAT ANKARA TR",
+      "amount": "10,00 TL"
+    },
+    {
+      "date": "18/02/2025",
+      "spending_category": "other",
+      "description": "OTOMATCI ANKARA OTOMAT ANKARA TR",
+      "amount": "10,00 TL"
+    },
+    {
+      "date": "19/02/2025",
+      "spending_category": "other",
+      "description": "OTOMATCI ANKARA OTOMAT ANKARA TR",
+      "amount": "10,00 TL"
+    },
+    {
+      "date": "07/02/2025",
+      "spending_category": "food_drinks",
+      "description": "PARAM//YEMEK SEPETI PAY ISTANBUL TR",
+      "amount": "208,99 TL"
+    }
+  ],
+  "card_limit": {
+    "total_card_limit": "2.000,00 TL",
+    "remaining_card_limit": "172,76 TL"
+  },
+  "category_totals": {
+    "food_drinks": "816,49 TL",
+    "clothing_cosmetics": null,
+    "subscription": null,
+    "groceries": "182,50 TL",
+    "transportation": null,
+    "entertainment": null,
+    "stationery_books": "257,50 TL",
+    "technology": "305,99 TL",
+    "bill_payment": null,
+    "education": null,
+    "health": null,
+    "cash_withdrawal": null,
+    "other": "145,75 TL"
+  }
+}
