@@ -26,10 +26,4 @@ class Agent:
         print(f"📝 Prompt sent to {self.name}:\n{prompt[:500]}...")
         response = self.model.generate_content(prompt)
         print(f"🧾 Raw response from {self.name}:\n{response.text[:500]}...")
-        cleaned = response.text.strip().strip("`").strip()
-        if cleaned.startswith("json"):
-            cleaned = cleaned[4:].strip()
-        try:
-            return json.loads(cleaned)
-        except json.JSONDecodeError:
-            return response.text
+        return response.text.strip()

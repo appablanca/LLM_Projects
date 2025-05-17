@@ -26,3 +26,9 @@ gradio
 # PDF'den metin çıkarmak için
 pdfplumber
 
+# Backend iletişim için
+fastapi
+
+# Asenkron HTTP istemcisi
+httpx
+

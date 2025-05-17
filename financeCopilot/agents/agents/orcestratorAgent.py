@@ -1,43 +1,62 @@
 import json
 from agents.baseAgent import Agent
 
-from agents.lifePlannerAgent import LifePlannerAgent
+from agents.lifePlannerAgent import LifePlannerAgent, lifePlannerAgentRole
 from agents.expenseAnalyzerAgent import ExpenseAnalyzerAgent, expenseAnalyzerRole
-from agents.normalChatAgent import NormalChatAgent
+from agents.normalChatAgent import NormalChatAgent, normalChatAgentRole
 
 
+orcestratorAgentRole = f"""You are a simple router. Your ONLY job is to return ONE of these exact strings based on the user's request:
+"lifeplanneragent"
+"expenseanalyzeragent"
+"normalchatagent"
 
+Here are the agents and their roles:
+
+- lifePlannerAgent: {lifePlannerAgentRole}
+- expenseAnalyzerAgent: {expenseAnalyzerRole}
+- normalChatAgent: {normalChatAgentRole}
+
+IMPORTANT RULES:
+1. Return ONLY ONE of these exact strings: "lifeplanneragent", "expenseanalyzeragent", or "normalchatagent"
+2. DO NOT add any other text, JSON, or formatting
+3. DO NOT explain your choice
+4. DO NOT ask questions
+5. DO NOT include any other information
+6. Just return the single word that best matches the user's request
+"""
 
 agents = {
     # "investmentAdvisorAgent": InvestmentAdvisorAgent("InvestmentAdvisor", "You give personalized investment advice."),
-    # "lifePlannerAgent": LifePlannerAgent("SurveyTaggerAgent", "You extract and tag survey responses."),
+    "lifePlannerAgent": LifePlannerAgent("LifePlannerAgent", lifePlannerAgentRole),
     "expenseAnalyzerAgent": ExpenseAnalyzerAgent("ExpenseAnalyzerAgent", expenseAnalyzerRole),
-    "normalChatAgent": NormalChatAgent("NormalChatAgent", "You are a helpful assistant that answers user messages."),
+    "normalChatAgent": NormalChatAgent("NormalChatAgent", normalChatAgentRole),
 }   
 
 
 class Orcestrator(Agent):
-   
-    def route_request(self, user_input,uploaded_pdf):
+    def __init__(self, name, role):
+        super().__init__(name, role)
+        
+    def get_agent_key(self, user_input):
         print(f"🔁 Routing request: {user_input}")
-        agent_key = self.generate_response(user_input)
-        print(f"Orchectrator response: {agent_key}")
-        if isinstance(agent_key, dict):
-            agent_key = json.dumps(agent_key)
-        agent_key = agent_key.strip().lower()
+        response = self.model.generate_content(user_input)
+        agent_key = response.text.strip().lower()
         print(f"🔑 Gemini suggested agent key: {agent_key}")
-        print(f"📎 Uploaded file: {uploaded_pdf.name if uploaded_pdf else 'None'}")
+        
+        # Ensure we only return one of the valid agent keys
+        valid_keys = ["lifeplanneragent", "expenseanalyzeragent", "normalchatagent"]
+        for key in valid_keys:
+            if key in agent_key:
+                return key
+                
+        # If no valid key found, default to normalchatagent
+        return "normalchatagent"
 
-        for key in agents.keys():
-            if key.lower() in agent_key:
-                print(f"Selected Agent: {key}")
-                if key == "expenseAnalyzerAgent":
-                    if uploaded_pdf:
-                        return agents[key].categorize_pdf(uploaded_pdf)
-                    else:
-                        return "Lütfen analiz edilecek bir PDF yükleyin."
-                else:
-                    return agents[key].generate_response(user_input)
-
-        print("⚠️ Unknown agent key:", agent_key)
-        return agents["NormalChatAgent"].generate_response(user_input)
+    def generate_response(self, prompt):
+        try:
+            response = self.model.generate_content(prompt)
+            return response.text.strip()
+        except Exception as e:
+            print(f"Error in generate_response: {e}")
+            return "I apologize, but I encountered an error processing your request."
