@@ -3,7 +3,7 @@ const path = require("path");
 const axios = require("axios");
 const Stock = require("../models/stockInfo");
 
-const TWELVE_DATA_API_KEY = process.env.TWELVE_DATA_API_KEY;
+const TWELVE_DATA_API_KEY = "8df44756db4c4d379ab253b05fefc6da";
 const BASE_URL = "https://api.twelvedata.com/time_series";
 
 exports.fetchAllStocksFromFile = async (req, res) => {
@@ -22,6 +22,17 @@ exports.fetchAllStocksFromFile = async (req, res) => {
 
   for (const symbol of symbols) {
     try {
+        // Check if the symbol already exists in the database
+        const existingStock = await Stock
+            .findOne({ symbol})
+            .select("symbol")
+            .lean();
+        if (existingStock) {
+            console.log(`Symbol ${symbol} already exists in the database.`);
+            results.push({ symbol, status: "Already exists" });
+            continue;
+        }
+      // Fetch weekly data for the symbol
       const response = await axios.get(BASE_URL, {
         params: {
           symbol: symbol,
@@ -68,8 +79,5 @@ exports.fetchAllStocksFromFile = async (req, res) => {
     }
   }
 
-  return res.status(200).json({
-    message: "Weekly stock data processing completed.",
-    summary: results,
-  });
+  return res.status(200).json({message: "Data fetched successfully"});
 };

@@ -35,7 +35,6 @@ def get_current_market_prices_fast(file_path: str):
         except Exception:
             results.append(f"{symbol}: Price not available")
 
-    print(results)
     return results
 
 

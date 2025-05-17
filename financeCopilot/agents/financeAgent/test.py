@@ -1,52 +1,39 @@
 import time
 import yfinance as yf
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
-def chunk_list(lst, size):
-    """Split list into chunks of given size."""
-    return [lst[i:i + size] for i in range(0, len(lst), size)]
-
-def get_latest_prices_batched(file_path: str, batch_size=10, max_workers=10):
+def get_latest_prices_serial(file_path: str, output_file: str = "latest_prices.txt"):
     with open(file_path, "r") as f:
         symbols = [line.strip() for line in f if line.strip()]
 
     results = []
 
-    def fetch_batch_price(batch):
+    for symbol in symbols:
         try:
             data = yf.download(
-                tickers=" ".join(batch),
-                period="1d",
-                interval="1m",
+                tickers=symbol,
+                period="5d",         # biraz daha uzun alalım ki veri olsun
+                interval="1d",
                 auto_adjust=False,
-                progress=False,
-                threads=False
+                progress=False
             )
-            output = []
-            for symbol in batch:
-                try:
-                    price = data['Close'][symbol].dropna().iloc[-1]
-                    output.append(f"{symbol}: {price:.2f} $")
-                except Exception:
-                    output.append(f"{symbol}: Price not available")
-            return output
+
+            if not data.empty:
+                price = data['Close'].dropna().iloc[-1]
+                results.append(f"{symbol}: {price:.2f} $")
+            else:
+                results.append(f"{symbol}: No data available")
         except Exception as e:
-            return [f"{symbol}: Error ({str(e)})" for symbol in batch]
+            results.append(f"{symbol}: Error ({str(e)})")
 
-    batches = chunk_list(symbols, batch_size)
-
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {executor.submit(fetch_batch_price, batch): batch for batch in batches}
-        for future in as_completed(futures):
-            results.extend(future.result())
+    # Dosyaya yaz
+    with open(output_file, "w") as f:
+        for result in results:
+            f.write(result + "\n")
 
     return results
 
-# Measure execution time
+# Zaman ölçümü
 start_time = time.time()
-get_latest_prices_batched("sp500_symbols.txt", batch_size=10, max_workers=10)
+get_latest_prices_serial("sp500_symbols.txt")
 end_time = time.time()
-
-
-
 print(f"\nExecution Time: {end_time - start_time:.2f} seconds")
