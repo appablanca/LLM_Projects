@@ -1,6 +1,6 @@
 import os, json
 import pdfplumber
-from agents.agents.baseAgent import Agent
+from agents.baseAgent import Agent
 spendingCategories = [
     "food_drinks", "clothing_cosmetics", "subscription", "groceries",
     "transportation", "entertainment", "stationery_books", "technology",

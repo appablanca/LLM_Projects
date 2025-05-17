@@ -1,12 +1,6 @@
 # Google Gemini için gerekli paket
 google-generativeai>=0.4.0
 
-# LangChain (LLM orkestrasyonu için)
-langchain>=0.1.13
-
-# LangChain'de Gemini kullanımı için gerekli backend
-langchain-google-genai>=0.0.5
-
 # JSON işleme ve veri temizliği
 orjson>=3.9.7
 
@@ -26,5 +20,9 @@ PyMuPDF
 # Ortak kullanım için
 requests
 
-# LangChain topluluğu için gerekli paketler
-langchain_community
+# Testler için
+gradio
+
+# PDF'den metin çıkarmak için
+pdfplumber
+

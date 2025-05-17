@@ -1,20 +1,18 @@
-from agents.agents.baseAgent import Agent
 import json
-from agents.agents.spendingAnalysisAgent import SpendingAnalysisAgent
-from agents.agents.investmentAdvisorAgent import InvestmentAdvisorAgent
-from agents.agents.lifePlannerAgent import LifePlannerAgent
-from agents.agents.expenseAnalyzerAgent import ExpenseAnalyzerAgent
-from agents.agents.normalChatAgent import NormalChatAgent
+from agents.baseAgent import Agent
+
+from agents.lifePlannerAgent import LifePlannerAgent
+from agents.expenseAnalyzerAgent import ExpenseAnalyzerAgent, expenseAnalyzerRole
+from agents.normalChatAgent import NormalChatAgent
 
 
 
 
 agents = {
-    "spending": SpendingAnalysisAgent("SpendingAnalysisAgent", "You analyze spending and return categories."),
-    "invest": InvestmentAdvisorAgent("InvestmentAdvisor", "You give personalized investment advice."),
-    "survey": LifePlannerAgent("SurveyTaggerAgent", "You extract and tag survey responses."),
+    # "investmentAdvisorAgent": InvestmentAdvisorAgent("InvestmentAdvisor", "You give personalized investment advice."),
+    # "lifePlannerAgent": LifePlannerAgent("SurveyTaggerAgent", "You extract and tag survey responses."),
     "expenseAnalyzerAgent": ExpenseAnalyzerAgent("ExpenseAnalyzerAgent", expenseAnalyzerRole),
-    "chat": NormalChatAgent("NormalChatAgent", "You are a helpful assistant that answers user messages."),
+    "normalChatAgent": NormalChatAgent("NormalChatAgent", "You are a helpful assistant that answers user messages."),
 }   
 
 

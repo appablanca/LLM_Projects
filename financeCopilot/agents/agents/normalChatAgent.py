@@ -1,5 +1,5 @@
 import json
-from agents.agents.baseAgent import Agent
+from agents.baseAgent import Agent
 class NormalChatAgent(Agent):
     def __init__(self, name, role):
         super().__init__(name, role)
