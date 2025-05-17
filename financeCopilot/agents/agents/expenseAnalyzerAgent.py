@@ -176,22 +176,23 @@ class ExpenseAnalyzerAgent(Agent):
                     transactions = response.get("transactions", [])
 
                     all_transactions.extend(transactions)
-
-            for t in all_transactions:
-                raw_amount = t.get("amount", "")
-                try:
-                    amount_number = float(raw_amount.replace(".", "").replace(",", ".").replace(" TL", "").replace("-", "").strip())
-                    flow_type = "income" if "-" not in raw_amount and not raw_amount.startswith("-") else "spending"
-                    t["flow"] = flow_type
-                    t["amount"] = f"{amount_number:,.2f} TL".replace(",", "X").replace(".", ",").replace("X", ".")
-                except:
-                    t["flow"] = "spending"
+                    
+                    for t in all_transactions:
+                        raw_amount = t.get("amount", "")
+                        try:
+                            amount_number = float(raw_amount.replace(".", "").replace(",", ".").replace(" TL", "").replace("-", "").strip())
+                            t["amount"] = f"{amount_number:,.2f} TL".replace(",", "X").replace(".", ",").replace("X", ".")
+                        except Exception as e:
+                            print(f"❌ Amount parse error: {raw_amount} — {e}")
 
             all_category_totals = {}
             for t in all_transactions:
                 if t.get("flow") != "spending":
                     continue
                 cat = t.get("spending_category")
+                if not cat or cat not in spendingCategories:
+                    continue  # geçersiz kategori varsa atla
+                
                 amount_str = t.get("amount", "0,00 TL")
                 try:
                     val = float(amount_str.replace(".", "").replace(",", ".").replace(" TL", ""))
@@ -201,6 +202,7 @@ class ExpenseAnalyzerAgent(Agent):
                     all_category_totals[cat] = formatted
                 except:
                     pass
+
 
             final_output = {
                 "type": "account statement",
