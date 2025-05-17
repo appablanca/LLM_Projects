@@ -28,7 +28,12 @@ pdfplumber
 
 # Backend iletişim için
 fastapi
+flask
+flask_cors
 
 # Asenkron HTTP istemcisi
 httpx
+
+
+
 

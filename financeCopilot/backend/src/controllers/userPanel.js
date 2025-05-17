@@ -44,6 +44,54 @@ exports.doSurvey = async (req, res) => {
   }
 };
 
+exports.editSurvey = async (req, res) => {
+  if (!req.session || !req.session.user) {
+    return res
+      .status(401)
+      .json({ message: "Unauthorized: User session not found" });
+  }
+
+  const userId = req.session.user.id;
+  const surveyData = req.body.surveyData;
+
+  if (!Array.isArray(surveyData)) {
+    return res
+      .status(400)
+      .json({ message: "Invalid survey data format. Expected an array." });
+  }
+
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    surveyData.forEach((item) => {
+      const existingField = user.fields.find((field) => field.name === item.name);
+      if (existingField) {
+        existingField.content = item.content;
+        existingField.deleted = 0;
+      } else {
+        user.fields.push({
+          name: item.name,
+          content: item.content,
+          deleted: 0,
+        });
+      }
+    });
+
+    await user.save();
+
+    return res.status(200).json({
+      message: "Survey data updated successfully",
+      updatedFields: surveyData.length,
+    });
+  } catch (error) {
+    console.error("Error updating survey data:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
 exports.getFields = async (req, res) => {
     let userId;
     

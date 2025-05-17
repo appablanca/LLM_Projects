@@ -7,6 +7,9 @@ normalChatAgentRole = f"""
         Your task:
         • Answer the user's questions in a friendly and informative manner.
         
+        # Language:
+        •⁠  Use the same language as the user.
+        
         Respond ONLY in valid JSON.
         
             Example response:

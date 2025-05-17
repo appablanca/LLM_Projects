@@ -37,26 +37,26 @@ These transactions must be **excluded from the output** entirely.
 
 Examples of such operations to exclude:
 - Point usage:
-  - “MaxiPuan Used”
-  - “KULLANILAN PUAN”
-  - “PUAN USED”
-  - “REWARD POINT REDEEMED”
-  - “-80,45 TL” with reference to point usage
+  - "MaxiPuan Used"
+  - "KULLANILAN PUAN"
+  - "PUAN USED"
+  - "REWARD POINT REDEEMED"
+  - "-80,45 TL" with reference to point usage
 - Point top-ups:
-  - “%50 PUAN YÜKLEME”
-  - “MAXIMUM GENÇ MARKET PUAN”
-  - “BONUS YÜKLEME”
-  - “PUAN YÜKLEME”
-  - “REWARD POINT ADDED”
+  - "%50 PUAN YÜKLEME"
+  - "MAXIMUM GENÇ MARKET PUAN"
+  - "BONUS YÜKLEME"
+  - "PUAN YÜKLEME"
+  - "REWARD POINT ADDED"
   - Any transaction that indicates loading or redeeming points instead of spending money.
 
 **Important**: These are not real spending and should be skipped entirely.
 
 14. For normal purchase transactions that **mention earned reward points**, such as:
-  - “KAZANILANMAXİPUAN: 0,02”
-  - “EARNED REWARD POINTS: 0.05”
-  - “KAZANILAN PUAN”
-  - “BONUS KAZANIMI”
+  - "KAZANILANMAXİPUAN: 0,02"
+  - "EARNED REWARD POINTS: 0.05"
+  - "KAZANILAN PUAN"
+  - "BONUS KAZANIMI"
 
 Include these transactions, but **remove any reward point references** from the `description` field.  
 The description should only contain relevant and clean purchase information (e.g., store name, location, brand, etc.), **not reward metadata**.
@@ -69,13 +69,13 @@ Examples:
 
 Examples of such transactions to exclude:
 - Any description that includes:
-  - “HESAPTAN AKTARIM”
-  - “TRANSFER”
-  - “HAVALE”
-  - “EFT”
-  - “FAST”
-  - “PARA AKTARIMI”
-  - “MONEY MOVEMENT”
+  - "HESAPTAN AKTARIM"
+  - "TRANSFER"
+  - "HAVALE"
+  - "EFT"
+  - "FAST"
+  - "PARA AKTARIMI"
+  - "MONEY MOVEMENT"
 - These are internal account actions and should **not** be included in the `transactions` list.
 
 
@@ -114,6 +114,10 @@ Example Target JSON Structure:
   }}
 }}
 
+
+# Language:
+•⁠  Use the same language as the user.
+
 """
 
 
@@ -146,76 +150,84 @@ class ExpenseAnalyzerAgent(Agent):
 
     def categorize_pdf(self, pdf_file) -> dict:
         try:
-            pdf_path = pdf_file.name
-            print(f"📥 Loading PDF: {pdf_path}")
-            text = self.extract_text_from_pdf(pdf_path)
-            print(f"📄 Extracted text length: {len(text)}")
+            # Save the uploaded file temporarily
+            temp_path = os.path.join('/tmp', pdf_file.filename)
+            pdf_file.save(temp_path)
+            print(f"📥 Loading PDF: {temp_path}")
+            
+            try:
+                text = self.extract_text_from_pdf(temp_path)
+                print(f"📄 Extracted text length: {len(text)}")
 
-            if not text.strip():
-                raise ValueError("PDF boş ya da metin çıkarılamadı.")
+                if not text.strip():
+                    raise ValueError("PDF boş ya da metin çıkarılamadı.")
 
-            with open("extracted_text_debug.txt", "w", encoding="utf-8") as f:
-                f.write(text)
-            print("✅ Saved extracted text to extracted_text_debug.txt")
+                with open("extracted_text_debug.txt", "w", encoding="utf-8") as f:
+                    f.write(text)
+                print("✅ Saved extracted text to extracted_text_debug.txt")
 
-            chunks = self.split_text_into_chunks(text, max_chars=5000)
-            print(f"🔍 Split into {len(chunks)} chunks")
+                chunks = self.split_text_into_chunks(text, max_chars=5000)
+                print(f"🔍 Split into {len(chunks)} chunks")
 
-            all_transactions = []
-            first_card_limit = None
-            first_customer_info = None
+                all_transactions = []
+                first_card_limit = None
+                first_customer_info = None
 
-            for i, chunk in enumerate(chunks):
-                print(f"🚀 Processing chunk {i + 1}/{len(chunks)}")
-                response = self.generate_response("Şu metni dönüştür:\n" + chunk)
+                for i, chunk in enumerate(chunks):
+                    print(f"🚀 Processing chunk {i + 1}/{len(chunks)}")
+                    response = self.generate_response("Şu metni dönüştür:\n" + chunk)
 
-                if isinstance(response, dict):
-                    if i == 0:
-                        first_customer_info = response.get("customer_info")
-                        first_card_limit = response.get("card_limit")
-                    transactions = response.get("transactions", [])
+                    if isinstance(response, dict):
+                        if i == 0:
+                            first_customer_info = response.get("customer_info")
+                            first_card_limit = response.get("card_limit")
+                        transactions = response.get("transactions", [])
 
-                    all_transactions.extend(transactions)
+                        all_transactions.extend(transactions)
+                        
+                        for t in all_transactions:
+                            raw_amount = t.get("amount", "")
+                            try:
+                                amount_number = float(raw_amount.replace(".", "").replace(",", ".").replace(" TL", "").replace("-", "").strip())
+                                t["amount"] = f"{amount_number:,.2f} TL".replace(",", "X").replace(".", ",").replace("X", ".")
+                            except Exception as e:
+                                print(f"❌ Amount parse error: {raw_amount} — {e}")
+
+                all_category_totals = {}
+                for t in all_transactions:
+                    if t.get("flow") != "spending":
+                        continue
+                    cat = t.get("spending_category")
+                    if not cat or cat not in spendingCategories:
+                        continue  # geçersiz kategori varsa atla
                     
-                    for t in all_transactions:
-                        raw_amount = t.get("amount", "")
-                        try:
-                            amount_number = float(raw_amount.replace(".", "").replace(",", ".").replace(" TL", "").replace("-", "").strip())
-                            t["amount"] = f"{amount_number:,.2f} TL".replace(",", "X").replace(".", ",").replace("X", ".")
-                        except Exception as e:
-                            print(f"❌ Amount parse error: {raw_amount} — {e}")
+                    amount_str = t.get("amount", "0,00 TL")
+                    try:
+                        val = float(amount_str.replace(".", "").replace(",", ".").replace(" TL", ""))
+                        prev_val = float(all_category_totals.get(cat, "0,00 TL").replace(".", "").replace(",", ".").replace(" TL", ""))
+                        total = val + prev_val
+                        formatted = f"{total:,.2f} TL".replace(",", "X").replace(".", ",").replace("X", ".")
+                        all_category_totals[cat] = formatted
+                    except:
+                        pass
 
-            all_category_totals = {}
-            for t in all_transactions:
-                if t.get("flow") != "spending":
-                    continue
-                cat = t.get("spending_category")
-                if not cat or cat not in spendingCategories:
-                    continue  # geçersiz kategori varsa atla
-                
-                amount_str = t.get("amount", "0,00 TL")
-                try:
-                    val = float(amount_str.replace(".", "").replace(",", ".").replace(" TL", ""))
-                    prev_val = float(all_category_totals.get(cat, "0,00 TL").replace(".", "").replace(",", ".").replace(" TL", ""))
-                    total = val + prev_val
-                    formatted = f"{total:,.2f} TL".replace(",", "X").replace(".", ",").replace("X", ".")
-                    all_category_totals[cat] = formatted
-                except:
-                    pass
+                final_output = {
+                    "type": "account statement",
+                    "customer_info": first_customer_info or {"full_name": None},
+                    "transactions": all_transactions,
+                    "card_limit": first_card_limit or {
+                        "total_card_limit": None,
+                        "remaining_card_limit": None
+                    },
+                    "category_totals": all_category_totals
+                }
 
+                return final_output
 
-            final_output = {
-                "type": "account statement",
-                "customer_info": first_customer_info or {"full_name": None},
-                "transactions": all_transactions,
-                "card_limit": first_card_limit or {
-                    "total_card_limit": None,
-                    "remaining_card_limit": None
-                },
-                "category_totals": all_category_totals
-            }
-
-            return final_output
+            finally:
+                # Clean up the temporary file
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
 
         except json.JSONDecodeError as e:
             print("❌ JSON parse hatası:", e)

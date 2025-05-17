@@ -44,12 +44,12 @@ Your responsibilities:
     "estimatedCost": "string",   // e.g. 500000 TRY
     "timeline": "string",        // e.g. 2 years
     "monthlyPlan": "string",     // e.g. Save 5000 TRY/month
-    "additionalNotes": "string"  // optional tips or warnings
+    "generalSummeryOfPlan": "string"  // e.g. Save 5000 TRY/month for 2 years to buy a car
   }
 }
 
-# Language:
-•⁠  Use the same language as the user.
+  # Language:
+  •⁠  Use the same language as the user.
 """
 
 

@@ -18,7 +18,7 @@ import {
   Close,
   HourglassEmpty,
 } from "@mui/icons-material";
-
+import { sendCopilotMessage } from "../../util/api";
 import { tokens } from "../../theme";
 
 const Copilot = () => {
@@ -32,42 +32,48 @@ const Copilot = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
+  useEffect(() => {
+    // Add initial welcome message
+    setMessages([
+      {
+        sender: "ai",
+        text: "Hello! I'm your Finance Copilot. How can I help you today?"
+      }
+    ]);
+  }, []);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  //   const handleSendMessage = async () => {
-  //     if (!input.trim()) return;
+  const handleSendMessage = async () => {
+    if (!input.trim() && !selectedFile) return;
 
-  //     const userMsg = { sender: "user", text: input };
-  //     setMessages((prev) => [...prev, userMsg]);
-  //     setInput("");
-  //     setLoading(true);
-  //     scrollToBottom();
+    const userMsg = { sender: "user", text: input || "Sent a file" };
+    setMessages((prev) => [...prev, userMsg]);
+    setInput("");
+    setLoading(true);
+    scrollToBottom();
 
-  //     const formData = new FormData();
-  //     formData.append("message", input);
-  //     formData.append("session_id", sessionId);
-  //     if (selectedFile) formData.append("file", selectedFile);
-
-  //     try {
-  //       const res = await sendMessageToLumosRAG(formData);
-  //       const botMsg = res?.response?.message || "Yanıt alınamadı.";
-  //       animateMessage(userMsg, botMsg);
-  //     } catch {
-  //       animateMessage(userMsg, "Bir hata oluştu. Lütfen tekrar deneyin.");
-  //     } finally {
-  //       setLoading(false);
-  //       setSelectedFile(null);
-  //     }
-  //   };
+    try {
+      const response = await sendCopilotMessage(input, selectedFile);
+      const botMsg = response?.response?.response || "No response received.";
+      animateMessage(userMsg, botMsg);
+    } catch (error) {
+      animateMessage(userMsg, "An error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+      setSelectedFile(null);
+    }
+  };
 
   const handleKeyPress = (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-    //   sendMessage();
+      handleSendMessage();
     }
   };
+
   const animateMessage = (prevUserMsg, botText) => {
     let i = 0;
     const interval = setInterval(() => {
@@ -242,12 +248,7 @@ const Copilot = () => {
               placeholder="Write your message here..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  // handleSendMessage();
-                }
-              }}
+              onKeyDown={handleKeyPress}
               sx={{
                 backgroundColor: colors.primary[500],
                 borderRadius: 2,
@@ -259,8 +260,8 @@ const Copilot = () => {
               }}
             />
             <Button
-              // onClick={handleSendMessage}
-              disabled={loading || !input.trim()}
+              onClick={handleSendMessage}
+              disabled={loading || (!input.trim() && !selectedFile)}
               variant="contained"
               sx={{
                 minWidth: 48,

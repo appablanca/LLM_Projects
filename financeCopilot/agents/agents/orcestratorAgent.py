@@ -4,6 +4,7 @@ from agents.baseAgent import Agent
 from agents.lifePlannerAgent import LifePlannerAgent, lifePlannerAgentRole
 from agents.expenseAnalyzerAgent import ExpenseAnalyzerAgent, expenseAnalyzerRole
 from agents.normalChatAgent import NormalChatAgent, normalChatAgentRole
+from agents.investmentAdvisorAgent import InvestmentAdvisorAgent, investmentAdvisorAgentRole
 
 
 orcestratorAgentRole = f"""You are a simple router. Your ONLY job is to return ONE of these exact strings based on the user's request:
@@ -16,6 +17,7 @@ Here are the agents and their roles:
 - lifePlannerAgent: {lifePlannerAgentRole}
 - expenseAnalyzerAgent: {expenseAnalyzerRole}
 - normalChatAgent: {normalChatAgentRole}
+- investmentAdvisorAgent: {investmentAdvisorAgentRole}
 
 IMPORTANT RULES:
 1. Return ONLY ONE of these exact strings: "lifeplanneragent", "expenseanalyzeragent", or "normalchatagent"
@@ -24,6 +26,11 @@ IMPORTANT RULES:
 4. DO NOT ask questions
 5. DO NOT include any other information
 6. Just return the single word that best matches the user's request
+
+
+# Language:
+•⁠  Use the same language as the user.
+
 """
 
 agents = {
@@ -31,6 +38,7 @@ agents = {
     "lifePlannerAgent": LifePlannerAgent("LifePlannerAgent", lifePlannerAgentRole),
     "expenseAnalyzerAgent": ExpenseAnalyzerAgent("ExpenseAnalyzerAgent", expenseAnalyzerRole),
     "normalChatAgent": NormalChatAgent("NormalChatAgent", normalChatAgentRole),
+    "investmentAdvisorAgent": InvestmentAdvisorAgent("InvestmentAdvisor", investmentAdvisorAgentRole)
 }   
 
 
@@ -45,7 +53,7 @@ class Orcestrator(Agent):
         print(f"🔑 Gemini suggested agent key: {agent_key}")
         
         # Ensure we only return one of the valid agent keys
-        valid_keys = ["lifeplanneragent", "expenseanalyzeragent", "normalchatagent"]
+        valid_keys = ["lifeplanneragent", "expenseanalyzeragent", "normalchatagent", "investmentadvisoragent"]
         for key in valid_keys:
             if key in agent_key:
                 return key
