@@ -3,30 +3,17 @@ import gradio as gr
 import google.generativeai as genai
 from agents.baseAgent import Agent
 from agents.expenseAnalyzerAgent import ExpenseAnalyzerAgent, expenseAnalyzerRole
-from agents.normalChatAgent import NormalChatAgent
-from agents.orcestratorAgent import Orcestrator
+from agents.normalChatAgent import NormalChatAgent, normalChatAgentRole
+from agents.orcestratorAgent import Orcestrator, orcestratorAgentRole, agents
+from agents.lifePlannerAgent import LifePlannerAgent, lifePlannerAgentRole
+import asyncio
 
 from dotenv import load_dotenv
 load_dotenv()
 
 api_key=os.getenv('GEMINI_API_KEY') 
 
-
-
-
-
-orchestrator = Orcestrator("Orchestrator", 
-    """You are the main controller. A user will ask something.
-    Decide which agent should handle the request from this list:
-    - spendingAna
-    - invest
-    - survey
-    - expenseAnalyzerAgent
-    - normalChatAgent
-    Respond only with the agent key (e.g., "spending") in lowercase and no other words.
-    """
-)
-
+orchestrator = Orcestrator("Orchestrator", orcestratorAgentRole) 
 
 # if __name__ == "__main__":
 #     while(True):
@@ -37,10 +24,29 @@ orchestrator = Orcestrator("Orchestrator",
 #         result=orchestrator.route_request(user_input)
 #         print(result)
 
+async def handle_user_input(user_text, uploaded_pdf):
+    try:
+        agent_key = orchestrator.get_agent_key(user_text)
+        print(f"📎 Uploaded file: {uploaded_pdf.name if uploaded_pdf else 'None'}")
 
-def handle_user_input(user_text, uploaded_pdf):
+        for key in agents.keys():
+            if key.lower() in agent_key:
+                print(f"Selected Agent: {key}")
+                if key == "expenseAnalyzerAgent":
+                    if uploaded_pdf:
+                        return agents[key].categorize_pdf(uploaded_pdf)
+                    else:
+                        return "Lütfen analiz edilecek bir PDF yükleyin."
+                elif key == "lifePlannerAgent":
+                    return await agents[key].get_life_plan(user_text)
+                else:
+                    return agents[key].generate_response(user_text)
 
-  return orchestrator.route_request(user_text,uploaded_pdf)
+        print("⚠️ Unknown agent key:", agent_key)
+        return agents["normalChatAgent"].generate_response(user_text)
+    except Exception as e:
+        print(f"Error in handle_user_input: {e}")
+        return {"error": "An error occurred while processing your request"}
 
 iface = gr.Interface(
     fn=handle_user_input,

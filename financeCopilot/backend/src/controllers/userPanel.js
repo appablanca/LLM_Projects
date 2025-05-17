@@ -45,19 +45,26 @@ exports.doSurvey = async (req, res) => {
 };
 
 exports.getFields = async (req, res) => {
-    if (!req.session || !req.session.user) {
-        return res
-        .status(401)
-        .json({ message: "Unauthorized: User session not found" });
-    }
+    let userId;
     
-    const userId = req.session.user.id;
+    // Check if userId is provided in query params
+    if (req.query.userId) {
+        userId = req.query.userId;
+    } else {
+        // Fallback to session-based authentication
+        if (!req.session || !req.session.user) {
+            return res
+                .status(401)
+                .json({ message: "Unauthorized: User session not found" });
+        }
+        userId = req.session.user.id;
+    }
     
     try {
         const user = await User.findById(userId);
     
         if (!user) {
-        return res.status(404).json({ message: "User not found" });
+            return res.status(404).json({ message: "User not found" });
         }
     
         return res.status(200).json(user.fields);

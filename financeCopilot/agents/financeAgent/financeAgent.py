@@ -1,70 +1,92 @@
 import os
+import json
 import requests
 import pandas as pd
 import yfinance as yf
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import google.generativeai as genai
+
 load_dotenv()
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-TWELVE_API_KEY = os.getenv("TWELVE_DATA_API_KEY")
-BASE_URL = "https://api.twelvedata.com/time_series"
-STOCK_LIST_URL = "https://api.twelvedata.com/stocks"
-
-
-def get_current_market_prices_fast(file_path: str):
-    with open(file_path, "r") as f:
-        symbols = [line.strip() for line in f if line.strip()]
-
-    data = yf.download(
-        tickers=" ".join(symbols),
-        period="1d",
-        interval="1m",  
-        group_by="ticker",
-        threads=True,
-        progress=False
-    )
-
-    results = []
-    for symbol in symbols:
-        try:
-            last_price = data[symbol]["Close"].dropna().iloc[-1]
-            results.append(f"{symbol}: {last_price:.2f} $")
-        except Exception:
-            results.append(f"{symbol}: Price not available")
-
-    return results
-
-
-
-def fetch_stock_history(symbol):
-    end_date = datetime.now().strftime('%Y-%m-%d')
-    start_date = (datetime.now() - timedelta(days=180)).strftime('%Y-%m-%d')
-    params = {
-        "symbol": symbol,
-        "interval": "1mo",
-        "start_date": start_date,
-        "end_date": end_date,
-        "apikey": TWELVE_API_KEY,
-    }
-    response = requests.get(BASE_URL, params=params)
-    if response.status_code != 200:
-        return []
-    return response.json().get("values", [])
-
-
+# Step 1: Kullanıcı profilini tanımla
 user_profile = {
     "age": 40,
     "risk_tolerance": "low",
     "investment_amount": 100000,
 }
 
+# Step 2: Günlük fiyatları oku
+def get_current_market_prices(file_path: str):
+    symbol_to_price = {}
+    with open(file_path, "r") as f:
+        for line in f:
+            line = line.strip()
+            if ":" in line and "$" in line:
+                try:
+                    parts = line.split(":")
+                    symbol = parts[0].strip()
+                    price = float(parts[1].replace("$", "").strip())
+                    symbol_to_price[symbol] = price
+                except ValueError:
+                    continue  # Geçersiz satırı atla
+    return symbol_to_price
 
-stock_data = {symbol: fetch_stock_history(symbol) for symbol in stock_symbols}
+current_prices = get_current_market_prices("market_prices_output.txt")
 
-# Step 6: Build prompt
+# Step 3: Tarihsel veriyi yükle
+with open("historical_data.json", "r", encoding="utf-8") as file:
+    historical_data = json.load(file)
+
+# Step 4: Her hissenin özetini çıkar
+def summarize_stock(symbol_data):
+    closes = [day["close"] for day in symbol_data["data"]]
+    if len(closes) < 2:
+        return None
+    return {
+        "symbol": symbol_data["symbol"],
+        "avg_close": round(sum(closes) / len(closes), 2),
+        "min_close": round(min(closes), 2),
+        "max_close": round(max(closes), 2),
+        "last_close": round(closes[-1], 2),
+        "volatility": round(max(closes) - min(closes), 2),
+        "growth_pct": round(((closes[-1] - closes[0]) / closes[0]) * 100, 2)
+    }
+
+summaries = [summarize_stock(item) for item in historical_data]
+summaries = [s for s in summaries if s is not None]
+
+# Step 5: Düşük riskli hisseleri seç (örnek kriterler: düşük volatilite + pozitif büyüme)
+low_risk_candidates = [
+    s for s in summaries if s["volatility"] < 35 and s["growth_pct"] > 0
+]
+
+# Step 6: İlk 3 tanesini seç ve güncel fiyatlarını ekle
+selected = sorted(low_risk_candidates, key=lambda x: x["volatility"])[:10]
+
+# 🔧 Eksik satır — güncel fiyatları eşle
+for s in selected:
+    s["today_price"] = current_prices.get(s["symbol"], "N/A")
+
+# Debug: Konsola yaz
+print("🧪 Selected Top 3 Low-Risk Candidates:")
+for s in selected:
+    print(f"- {s['symbol']}: Volatility={s['volatility']}, Growth={s['growth_pct']}%, LastClose={s['last_close']}, Today={s['today_price']}")
+
+# Step 7: Prompt’u oluştur
+summary_lines = "\n".join([
+    f"""
+Ticker: {s['symbol']}
+- Avg Close: {s['avg_close']} $
+- Growth (1y): {s['growth_pct']} %
+- Volatility: {s['volatility']} $
+- Last Close: {s['last_close']} $
+- Today’s Price: {s['today_price']} $
+""" for s in selected
+])
+
 prompt = f"""
 You are a conservative financial assistant recommending a specific investment portfolio.
 
@@ -75,27 +97,19 @@ User profile:
 - Investment horizon: 10 years
 - User prefers stable, smaller companies and wants to avoid speculative investments.
 
-Below is 6-month historical daily price data for {len(stock_data)} stocks.
+Below is a summary of 3 low-risk stock candidates:
 
-Please recommend 2–3 stocks **from this data**, specifically naming the tickers and explaining why they're suitable for a super-low-risk, long-term investor. Use the price trend if possible.
+{summary_lines}
 
-Stock price data:
+Please recommend 2–3 stocks **from this data**, naming the tickers and explaining why they are suitable for a super-low-risk, long-term investor.
+At the end give a portfolio suggestion with the following format:
+- 50% in [TICKER1]
+- 30% in [TICKER2]
+- 20% in [TICKER3]
+The percentage values should add up to 100%.
 """
 
-for symbol, values in stock_data.items():
-    if not values:
-        continue
-    prompt += f"\nStock: {symbol}\n"
-    prompt += "\n".join([f"{v['datetime']}: {v['close']} USD" for v in values[:5]])  # Limit to recent 5 for brevity
-
-prompt += "\n\nReturn a specific stock recommendation portfolio for this user profile."
-
-
-print("\n" + "=" * 40 + " PROMPT TO GEMINI " + "=" * 40)
-print(prompt)
-print("=" * 100 + "\n")
-
-
+# Step 8: Gemini'den yanıt al
 response = model.generate_content(prompt)
 print("💡 Gemini's Recommendation:\n")
 print(response.text)

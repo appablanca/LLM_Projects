@@ -90,8 +90,14 @@ router.post("/doSurvey", userPanelController.doSurvey);
  * @swagger
  * /userPanel/getFields:
  *   get:
- *     summary: Get all fields for the authenticated user
+ *     summary: Get all fields for a user
  *     tags: [userPanel]
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         schema:
+ *           type: string
+ *         description: Optional user ID to fetch fields for. If not provided, uses authenticated user's session.
  *     responses:
  *       200:
  *         description: Successfully retrieved user fields
@@ -112,7 +118,7 @@ router.post("/doSurvey", userPanelController.doSurvey);
  *                     type: number
  *                     example: 0
  *       401:
- *         description: Unauthorized - User session not found
+ *         description: Unauthorized - User session not found (when no userId provided)
  *         content:
  *           application/json:
  *             schema:
