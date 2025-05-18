@@ -62,8 +62,8 @@ class Orcestrator(Agent):
     def get_agent_key(self, user_input):
         print(f"🔁 Routing request: {user_input}")
         
-        if self.conversation_log:
-            last_turn = self.conversation_log[-1]
+        if self.conversation_history:
+            last_turn = self.conversation_history[-1]
             last_agent = last_turn["agent_key"]
             last_response = last_turn["agent_response"]
 
