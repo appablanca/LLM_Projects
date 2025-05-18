@@ -20,7 +20,7 @@ Instructions:
    - amount
 4. Format descriptions by inserting appropriate spaces between merged words, brand names, and locations. For example:
    "MIGROSZIYAGOKALPANKARATR" should become "MIGROS ZIYA GOKALP ANKARA TR".
-5. **Exclude any transactions related to reward points**. That means:
+5. *Exclude any transactions related to reward points*. That means:
    - If a transaction includes words like "puan", "PUAN", or "MaxiPuan" in the description,
    - Do not include this transaction in the final JSON output.
 6. In "card_limit", include only:
@@ -29,8 +29,8 @@ Instructions:
 7. Categorize totals under the given list of categories based on transaction type.
 8. Use null for any missing or unknown values.
 9. Output must be valid, properly formatted JSON.
-10. Exclude all transactions that are **point-related financial operations** — that is, when the transaction itself is a reward point usage or a point top-up. 
-These transactions must be **excluded from the output** entirely.
+10. Exclude all transactions that are *point-related financial operations* — that is, when the transaction itself is a reward point usage or a point top-up. 
+These transactions must be *excluded from the output* entirely.
 11. Don't forget that such as -100,00 TL is negative amount ant it should be treated like expense/spending/payment.
 12. All "amount" fields must be positive values. Do not include any minus signs.
 13. Add a new field to each transaction named "flow". Use "spending" if the transaction is an expense (originally negative amount), or "income" if it is a refund or incoming money (originally positive).
@@ -50,22 +50,22 @@ Examples of such operations to exclude:
   - “REWARD POINT ADDED”
   - Any transaction that indicates loading or redeeming points instead of spending money.
 
-**Important**: These are not real spending and should be skipped entirely.
+*Important*: These are not real spending and should be skipped entirely.
 
-14. For normal purchase transactions that **mention earned reward points**, such as:
+14. For normal purchase transactions that *mention earned reward points*, such as:
   - “KAZANILANMAXİPUAN: 0,02”
   - “EARNED REWARD POINTS: 0.05”
   - “KAZANILAN PUAN”
   - “BONUS KAZANIMI”
 
-Include these transactions, but **remove any reward point references** from the `description` field.  
-The description should only contain relevant and clean purchase information (e.g., store name, location, brand, etc.), **not reward metadata**.
+Include these transactions, but *remove any reward point references* from the description field.  
+The description should only contain relevant and clean purchase information (e.g., store name, location, brand, etc.), *not reward metadata*.
 
 Examples:
 - "CHILLINCAFEANKARATR KAZANILANMAXİPUAN:0,02" → "CHILLIN CAFE ANKARA TR"
 - "BIM A.S./U633/EMEK4 //ANKARATR KAZANILAN PUAN: 0.15" → "BIM A.S./U633/EMEK4 //ANKARA TR"
 
-15. Exclude transactions that represent **money transfers** or account operations — these are not actual spending.
+15. Exclude transactions that represent *money transfers* or account operations — these are not actual spending.
 
 Examples of such transactions to exclude:
 - Any description that includes:
@@ -76,7 +76,7 @@ Examples of such transactions to exclude:
   - “FAST”
   - “PARA AKTARIMI”
   - “MONEY MOVEMENT”
-- These are internal account actions and should **not** be included in the `transactions` list.
+- These are internal account actions and should *not* be included in the transactions list.
 
 
 Allowed spending categories: {spendingCategories}
@@ -118,8 +118,8 @@ Example Target JSON Structure:
 
 
 class ExpenseAnalyzerAgent(Agent):
-    def __init__(self, name, role):
-        super().__init__(name, role)
+    def _init_(self, name, role):
+        super()._init_(name, role)
         
     def extract_text_from_pdf(self, pdf_path: str) -> str:
         print(f"🔍 Extracting text from: {pdf_path}")
@@ -176,23 +176,22 @@ class ExpenseAnalyzerAgent(Agent):
                     transactions = response.get("transactions", [])
 
                     all_transactions.extend(transactions)
-                    
-                    for t in all_transactions:
-                        raw_amount = t.get("amount", "")
-                        try:
-                            amount_number = float(raw_amount.replace(".", "").replace(",", ".").replace(" TL", "").replace("-", "").strip())
-                            t["amount"] = f"{amount_number:,.2f} TL".replace(",", "X").replace(".", ",").replace("X", ".")
-                        except Exception as e:
-                            print(f"❌ Amount parse error: {raw_amount} — {e}")
+
+            for t in all_transactions:
+                raw_amount = t.get("amount", "")
+                try:
+                    amount_number = float(raw_amount.replace(".", "").replace(",", ".").replace(" TL", "").replace("-", "").strip())
+                    flow_type = "income" if "-" not in raw_amount and not raw_amount.startswith("-") else "spending"
+                    t["flow"] = flow_type
+                    t["amount"] = f"{amount_number:,.2f} TL".replace(",", "X").replace(".", ",").replace("X", ".")
+                except:
+                    t["flow"] = "spending"
 
             all_category_totals = {}
             for t in all_transactions:
                 if t.get("flow") != "spending":
                     continue
                 cat = t.get("spending_category")
-                if not cat or cat not in spendingCategories:
-                    continue  # geçersiz kategori varsa atla
-                
                 amount_str = t.get("amount", "0,00 TL")
                 try:
                     val = float(amount_str.replace(".", "").replace(",", ".").replace(" TL", ""))
@@ -202,7 +201,6 @@ class ExpenseAnalyzerAgent(Agent):
                     all_category_totals[cat] = formatted
                 except:
                     pass
-
 
             final_output = {
                 "type": "account statement",
@@ -223,4 +221,4 @@ class ExpenseAnalyzerAgent(Agent):
             raise
         except Exception as e:
             print("🚫 Hata:", e)
-            raise        
+            raise
