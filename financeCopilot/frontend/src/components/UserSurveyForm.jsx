@@ -285,7 +285,10 @@ const UserSurveyForm = () => {
         value={formik.values.savings}
         onChange={formik.handleChange}
         error={formik.touched.savings && Boolean(formik.errors.savings)}
-        helperText={formik.touched.savings && formik.errors.savings}
+        helperText={
+          (formik.touched.savings && formik.errors.savings) ||
+          "Please don’t use '.' or ',' — only whole numbers."
+        }
         disabled={!isEditing}
       />
       <TextField
@@ -332,7 +335,10 @@ const UserSurveyForm = () => {
           value={formik.values.rent || ""}
           onChange={formik.handleChange}
           error={formik.touched.rent && Boolean(formik.errors.rent)}
-          helperText={formik.touched.rent && formik.errors.rent}
+          helperText={
+            (formik.touched.rent && formik.errors.rent) ||
+            "Please don’t use '.' or ',' — only whole numbers."
+          }
           disabled={!isEditing}
         />
       )}
