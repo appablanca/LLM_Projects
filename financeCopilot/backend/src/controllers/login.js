@@ -26,6 +26,7 @@ exports.postLogin = async (req, res) => {
             email: user.email,
             name: user.name,
             surname: user.surname,
+            fields : user.fields,
             isSurvey: user.isSurvey
 
         };

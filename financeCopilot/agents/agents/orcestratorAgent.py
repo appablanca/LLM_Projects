@@ -20,7 +20,7 @@ Here are the agents and their roles:
 - investmentAdvisorAgent: {investmentAdvisorAgentRole}
 
 IMPORTANT RULES:
-1. Return ONLY ONE of these exact strings: "lifeplanneragent", "expenseanalyzeragent", or "normalchatagent"
+1. Return ONLY ONE of these exact strings: "lifeplanneragent", "expenseanalyzeragent", "investmentadvisoragent" ,"normalchatagent"
 2. DO NOT add any other text, JSON, or formatting
 3. DO NOT explain your choice
 4. DO NOT ask questions
@@ -34,7 +34,6 @@ IMPORTANT RULES:
 """
 
 agents = {
-    # "investmentAdvisorAgent": InvestmentAdvisorAgent("InvestmentAdvisor", "You give personalized investment advice."),
     "lifePlannerAgent": LifePlannerAgent("LifePlannerAgent", lifePlannerAgentRole),
     "expenseAnalyzerAgent": ExpenseAnalyzerAgent("ExpenseAnalyzerAgent", expenseAnalyzerRole),
     "normalChatAgent": NormalChatAgent("NormalChatAgent", normalChatAgentRole),
@@ -61,10 +60,3 @@ class Orcestrator(Agent):
         # If no valid key found, default to normalchatagent
         return "normalchatagent"
 
-    def generate_response(self, prompt):
-        try:
-            response = self.model.generate_content(prompt)
-            return response.text.strip()
-        except Exception as e:
-            print(f"Error in generate_response: {e}")
-            return "I apologize, but I encountered an error processing your request."

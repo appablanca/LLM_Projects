@@ -21,9 +21,12 @@ class Agent:
             generation_config=generation_config,
             system_instruction=role,
         )
+        chat = self.model.start_chat(history=[])
+        self.chat=chat
+
 
     def generate_response(self, prompt):
         print(f"📝 Prompt sent to {self.name}:\n{prompt[:500]}...")
-        response = self.model.generate_content(prompt)
+        response = self.chat.send_message(prompt)
         print(f"🧾 Raw response from {self.name}:\n{response.text[:500]}...")
         return response.text.strip()
