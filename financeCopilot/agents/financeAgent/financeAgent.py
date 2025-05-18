@@ -11,14 +11,13 @@ load_dotenv()
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-# Step 1: Kullanıcı profilini tanımla
 user_profile = {
-    "age": 40,
-    "risk_tolerance": "low",
+    "age": 22,
+    "risk_tolerance": "high",
     "investment_amount": 100000,
 }
 
-# Step 2: Günlük fiyatları oku
+
 def get_current_market_prices(file_path: str):
     symbol_to_price = {}
     with open(file_path, "r") as f:
@@ -36,13 +35,13 @@ def get_current_market_prices(file_path: str):
 
 current_prices = get_current_market_prices("market_prices_output.txt")
 
-# Step 3: Tarihsel veriyi yükle
+
 with open("historical_data.json", "r", encoding="utf-8") as file:
     historical_data = json.load(file)
 
 # Step 4: Her hissenin özetini çıkar
 def summarize_stock(symbol_data):
-    closes = [day["close"] for day in symbol_data["data"]]
+    closes = [day["close"] for day in reversed(symbol_data["data"])]
     if len(closes) < 2:
         return None
     return {
@@ -58,24 +57,23 @@ def summarize_stock(symbol_data):
 summaries = [summarize_stock(item) for item in historical_data]
 summaries = [s for s in summaries if s is not None]
 
-# Step 5: Düşük riskli hisseleri seç (örnek kriterler: düşük volatilite + pozitif büyüme)
+
 low_risk_candidates = [
     s for s in summaries if s["volatility"] < 35 and s["growth_pct"] > 0
 ]
 
-# Step 6: İlk 3 tanesini seç ve güncel fiyatlarını ekle
-selected = sorted(low_risk_candidates, key=lambda x: x["volatility"])[:10]
 
-# 🔧 Eksik satır — güncel fiyatları eşle
+selected = sorted(low_risk_candidates, key=lambda x: x["volatility"])[:100]
+
 for s in selected:
     s["today_price"] = current_prices.get(s["symbol"], "N/A")
 
-# Debug: Konsola yaz
-print("🧪 Selected Top 3 Low-Risk Candidates:")
+
+
 for s in selected:
     print(f"- {s['symbol']}: Volatility={s['volatility']}, Growth={s['growth_pct']}%, LastClose={s['last_close']}, Today={s['today_price']}")
 
-# Step 7: Prompt’u oluştur
+
 summary_lines = "\n".join([
     f"""
 Ticker: {s['symbol']}
@@ -97,7 +95,7 @@ User profile:
 - Investment horizon: 10 years
 - User prefers stable, smaller companies and wants to avoid speculative investments.
 
-Below is a summary of 3 low-risk stock candidates:
+Below is a summary of 100 low-risk stock candidates:
 
 {summary_lines}
 
@@ -109,7 +107,6 @@ At the end give a portfolio suggestion with the following format:
 The percentage values should add up to 100%.
 """
 
-# Step 8: Gemini'den yanıt al
 response = model.generate_content(prompt)
 print("💡 Gemini's Recommendation:\n")
 print(response.text)
