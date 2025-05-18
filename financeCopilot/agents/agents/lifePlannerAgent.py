@@ -10,75 +10,53 @@ load_dotenv()
 
 BACKEND_URL = os.getenv("BACKEND_URL")
 
-
 app = FastAPI()
 
-lifePlannerAgentRole = f"""
-        You are a smart financial assistant helping users build a personal life plan.
+lifePlannerAgentRole = """
+You are a smart financial assistant helping users build a personal life plan.
 
-        Your task:
-        •⁠  Review the user profile and the ongoing dialogue.
-        •⁠  If you need more detail or believe it would improve the plan, ask a follow-up question.
-        •⁠  If the data is sufficient, generate a full life plan.
-        •⁠  You can use the user profile data to inform and specify your response.
+Your responsibilities:
+•⁠  Review the user's profile and the current conversation.
+•⁠  If the topic affects the user's financial life, switch to 'life plan mode'.
+•⁠  If not financially relevant, reply normally but still return JSON.
+•⁠  Generate a structured life plan ONLY for the specific topic the user is talking about (e.g., only car plan if they're asking about a car).
+•⁠  NEVER include investment advice or investment planning under any circumstances.
+•⁠  If you need more details for a better plan, respond by asking a follow-up question.
 
+# Output Rules:
+•⁠  ALWAYS return a valid JSON.
+•⁠  NEVER return plain text or markdown.
+•⁠  DO NOT include unrelated sections.
 
-        Respond ONLY in valid JSON.
+## Expected JSON response format:
 
-            If asking another question:
-         '''json   
-        {{
-        "askingQuestion": true,
-        "question": "..."
-        }}
-        '''json
+### When asking for more details:
+{
+  "askingQuestion": true,
+  "question": "..."  // follow-up question in user's language
+}
 
-            If ready to generate the plan:
-        '''json    
-        {{
-        "askingQuestion": false,
-        "lifePlan": {{
-            "carPlan": {{
-            "savingPeriod": "...",
-            "recommendedModel": "...",
-            "averageCost": ...
-            }},
-            "housingPlan": {{
-            "recommendedPurchaseTime": "...",
-            "suggestedLocation": "...",
-            "averageCost": ...,
-            "downPayment": ...
-            }},
-            "investmentPlan": {{
-            "monthlyAmount": ...,
-            "recommendedInstruments": ["...", "..."]
-            }},
-            "childrenPlan": {{
-            "educationFundSuggestion": "..."
-            }},
-            "retirementPlan": {{
-            "targetAge": ...,
-            "targetSavings": ...
-            }}
-        }}
-        }}
-        '''json
+### When generating a life plan:
+{
+  "askingQuestion": false,
+  "lifePlan": {
+    "goal": "string",            // e.g. Buy a car
+    "estimatedCost": "string",   // e.g. 500000 TRY
+    "timeline": "string",        // e.g. 2 years
+    "monthlyPlan": "string",     // e.g. Save 5000 TRY/month
+    "generalSummeryOfPlan": "string"  // e.g. Save 5000 TRY/month for 2 years to buy a car
+  }
+}
 
-        #Language:
-        - Use the same language as the user.
-        
-        #Notes:
-        •⁠  Use your judgment: even if data seems complete, you may ask more to improve accuracy.
-        •⁠  You can use the user profile data to inform your response.
-        •⁠  Only include childrenPlan if applicable.
-        •⁠  Do NOT return markdown or explanations. Only JSON.
-    """
-    
+  # Language:
+  •⁠  Use the same language as the user.
+"""
+
 
 class LifePlannerAgent(Agent):
-    def __init__(self, name, role):
-        super().__init__(name, role)
-        
+    def _init_(self, name, role):
+        super()._init_(name, role)
+
     async def fetch_user_data(self):
         async with httpx.AsyncClient() as client:
             try:
@@ -87,15 +65,17 @@ class LifePlannerAgent(Agent):
                 return response.json()
             except httpx.HTTPError as e:
                 print(f"Error fetching user data: {e}")
-                return {} 
+                return {}
 
-    async def get_life_plan(self, prompt):
-        try:
-            user_data = await self.fetch_user_data()
-            print(f"📎 User data: {user_data}")
-            response = self.model.generate_content(prompt + json.dumps(user_data))
-            return response.text.strip()
-        except Exception as e:
-            print(f"Error in get_life_plan: {e}")
-            return {"error": "Failed to generate life plan"}
 
+    async def get_life_plan(self, user_message):
+      try:
+        user_data = await self.fetch_user_data()
+        print(f"📎 User data: {user_data}")
+
+        response = self.model.generate_content(user_message + "User profile: " + json.dumps(user_data))
+        return json.loads(response.text.strip())
+
+      except Exception as e:
+        print(f"Error in get_life_plan: {e}")
+        return json.dumps({"error": "Hayat planı oluşturulamadı."})

@@ -37,17 +37,17 @@ These transactions must be *excluded from the output* entirely.
 
 Examples of such operations to exclude:
 - Point usage:
-  - “MaxiPuan Used”
-  - “KULLANILAN PUAN”
-  - “PUAN USED”
-  - “REWARD POINT REDEEMED”
-  - “-80,45 TL” with reference to point usage
+  - "MaxiPuan Used"
+  - "KULLANILAN PUAN"
+  - "PUAN USED"
+  - "REWARD POINT REDEEMED"
+  - "-80,45 TL" with reference to point usage
 - Point top-ups:
-  - “%50 PUAN YÜKLEME”
-  - “MAXIMUM GENÇ MARKET PUAN”
-  - “BONUS YÜKLEME”
-  - “PUAN YÜKLEME”
-  - “REWARD POINT ADDED”
+  - "%50 PUAN YÜKLEME"
+  - "MAXIMUM GENÇ MARKET PUAN"
+  - "BONUS YÜKLEME"
+  - "PUAN YÜKLEME"
+  - "REWARD POINT ADDED"
   - Any transaction that indicates loading or redeeming points instead of spending money.
 
 *Important*: These are not real spending and should be skipped entirely.
@@ -114,6 +114,10 @@ Example Target JSON Structure:
   }}
 }}
 
+
+# Language:
+•⁠  Use the same language as the user.
+
 """
 
 
@@ -124,12 +128,20 @@ class ExpenseAnalyzerAgent(Agent):
     def extract_text_from_pdf(self, pdf_path: str) -> str:
         print(f"🔍 Extracting text from: {pdf_path}")
         all_text = ""
-        with pdfplumber.open(pdf_path) as pdf:
-            for page in pdf.pages:
-                text = page.extract_text()
-                if text:
-                    all_text += text + "\n"
-        return all_text
+        try:
+            with pdfplumber.open(pdf_path) as pdf:
+                for page_num, page in enumerate(pdf.pages):
+                    text = page.extract_text()
+                    print(f"📄 Page {page_num + 1} text length: {len(text) if text else 0}")
+                    if text:
+                        all_text += text + "\n"
+            print(f"✅ Total extracted text length: {len(all_text)}")
+            print("📝 First 500 characters of extracted text:")
+            print(all_text[:500])
+            return all_text
+        except Exception as e:
+            print(f"❌ Error extracting text: {str(e)}")
+            raise
 
     def split_text_into_chunks(self, text, max_chars=5000):
         chunks = []
@@ -142,38 +154,46 @@ class ExpenseAnalyzerAgent(Agent):
                 current = line + "\n"
         if current.strip():
             chunks.append(current.strip())
+        print(f"📦 Split text into {len(chunks)} chunks")
+        print(f"📝 First chunk preview: {chunks[0][:200] if chunks else 'No chunks'}")
         return chunks
 
     def categorize_pdf(self, pdf_file) -> dict:
         try:
-            pdf_path = pdf_file.name
-            print(f"📥 Loading PDF: {pdf_path}")
-            text = self.extract_text_from_pdf(pdf_path)
-            print(f"📄 Extracted text length: {len(text)}")
+            # Save the uploaded file temporarily
+            temp_path = os.path.join('/tmp', pdf_file.filename)
+            pdf_file.save(temp_path)
+            print(f"📥 Loading PDF: {temp_path}")
+            
+            try:
+                text = self.extract_text_from_pdf(temp_path)
+                print(f"📄 Extracted text length: {len(text)}")
 
-            if not text.strip():
-                raise ValueError("PDF boş ya da metin çıkarılamadı.")
+                if not text.strip():
+                    raise ValueError("PDF boş ya da metin çıkarılamadı.")
 
-            with open("extracted_text_debug.txt", "w", encoding="utf-8") as f:
-                f.write(text)
-            print("✅ Saved extracted text to extracted_text_debug.txt")
+                with open("extracted_text_debug.txt", "w", encoding="utf-8") as f:
+                    f.write(text)
+                print("✅ Saved extracted text to extracted_text_debug.txt")
 
-            chunks = self.split_text_into_chunks(text, max_chars=5000)
-            print(f"🔍 Split into {len(chunks)} chunks")
+                chunks = self.split_text_into_chunks(text, max_chars=5000)
+                print(f"🔍 Split into {len(chunks)} chunks")
 
-            all_transactions = []
-            first_card_limit = None
-            first_customer_info = None
+                all_transactions = []
+                first_card_limit = None
+                first_customer_info = None
 
-            for i, chunk in enumerate(chunks):
-                print(f"🚀 Processing chunk {i + 1}/{len(chunks)}")
-                response = self.generate_response("Şu metni dönüştür:\n" + chunk)
+                for i, chunk in enumerate(chunks):
+                    print(f"🚀 Processing chunk {i + 1}/{len(chunks)}")
+                    print(f"📝 Chunk preview: {chunk[:200]}")
+                    response = self.generate_response("Şu metni dönüştür:\n" + chunk)
+                    print(f"🤖 Agent response: {json.dumps(response, indent=2, ensure_ascii=False)}")
 
-                if isinstance(response, dict):
-                    if i == 0:
-                        first_customer_info = response.get("customer_info")
-                        first_card_limit = response.get("card_limit")
-                    transactions = response.get("transactions", [])
+                    if isinstance(response, dict):
+                        if i == 0:
+                            first_customer_info = response.get("customer_info")
+                            first_card_limit = response.get("card_limit")
+                        transactions = response.get("transactions", [])
 
                     all_transactions.extend(transactions)
 
@@ -213,7 +233,12 @@ class ExpenseAnalyzerAgent(Agent):
                 "category_totals": all_category_totals
             }
 
-            return final_output
+                return final_output
+
+            finally:
+                # Clean up the temporary file
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
 
         except json.JSONDecodeError as e:
             print("❌ JSON parse hatası:", e)

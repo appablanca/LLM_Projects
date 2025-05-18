@@ -130,17 +130,17 @@ export function getSurveyFields() {
 
 async function editSurveyFields (surveyData) {
   try {
-    const response = await axiosInstance.post(`/userPanel/editSurveyFields`, {
+    const response = await axiosInstance.post(`/userPanel/editSurvey`, {
       surveyData: surveyData,
     });
     return response.data;
   } catch (error) {
     console.error(
-      "Error getting user survey:",
+      "Error editing user survey:",
       error.response ? error.response.data : error.message
     );
     throw new Error(
-      "Failed to get user survey: " +
+      "Failed to edit user survey: " +
         (error.response ? error.response.data : error.message)
     );
   }
@@ -148,3 +148,32 @@ async function editSurveyFields (surveyData) {
 export function editSurvey(surveyData) {
   return editSurveyFields(surveyData);
 }
+
+async function sendMessageToCopilot(message, file) {
+  try {
+    const formData = new FormData();
+    if (message) formData.append('message', message);
+    if (file) formData.append('file', file);
+
+    const response = await axiosInstance.post(`/copilot/chat`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error sending message to copilot:",
+      error.response ? error.response.data : error.message
+    );
+    throw new Error(
+      "Failed to send message to copilot: " +
+        (error.response ? error.response.data : error.message)
+    );
+  }
+}
+
+export function sendCopilotMessage(message, file) {
+  return sendMessageToCopilot(message, file);
+}
+

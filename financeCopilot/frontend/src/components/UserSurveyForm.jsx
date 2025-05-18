@@ -1,4 +1,4 @@
-import React, {useContext, useEffect, useState} from "react"; 
+import React, { useContext, useEffect, useState } from "react";
 import {
   Box,
   TextField,
@@ -13,18 +13,20 @@ import { tokens } from "./../theme";
 import { sendSurvey, getSurveyFields, editSurvey } from "../util/api";
 import { toast } from "react-toastify";
 import { AuthContext } from "../context/AuthContext";
-import EditIcon from '@mui/icons-material/Edit';
+import EditIcon from "@mui/icons-material/Edit";
 import LoadingAnimation from "./LoadingAnimation";
 
 const validationSchema = yup.object({
   age: yup
     .number()
     .required("Required")
-    .min(18, "18 yaşından büyük olmalısınız"),
+    .min(18, "Yoou must be at least 18 years old"),
   income: yup.number().required("Required"),
+  city: yup.string().required("Required"),
   housing: yup.string().required("Required"),
   maritalStatus: yup.string().required("Required"),
   riskTolerance: yup.string().required("Required"),
+  savings: yup.number().required("Required").min(0, "Cannot be negative"),
   children: yup
     .number()
     .transform((value, originalValue) =>
@@ -39,7 +41,6 @@ const validationSchema = yup.object({
 });
 
 const UserSurveyForm = () => {
-
   const { user } = useContext(AuthContext);
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -52,17 +53,21 @@ const UserSurveyForm = () => {
     initialValues: {
       age: "",
       income: "",
+      city: "",
       housing: "",
+      rent: "",
       maritalStatus: "",
       riskTolerance: "",
+      savings: "",
       children: "",
-      rent: "", // EKLE BUNU
     },
     validationSchema,
     onSubmit: (values) => {
       const surveyData = [
         { name: "Age", content: String(values.age) },
         { name: "Income", content: String(values.income) },
+        { name: "Savings", content: String(values.savings) }, // Yeni alan
+        { name: "City", content: String(values.city) },
         { name: "Housing", content: values.housing },
         {
           name: "Rent",
@@ -83,7 +88,10 @@ const UserSurveyForm = () => {
       const submitFunction = hasExistingData ? editSurvey : sendSurvey;
       submitFunction(surveyData)
         .then((response) => {
-          if (response?.message === "Survey data saved successfully") {
+          if (
+            response?.message === "Survey data saved successfully" ||
+            "Survey data updated successfully"
+          ) {
             if (hasExistingData) {
               toast.success("Survey updated successfully!", {
                 position: "top-right",
@@ -106,23 +114,21 @@ const UserSurveyForm = () => {
             }
             setIsEditing(false);
           } else {
-            toast.error(
-              "Survey submission failed. Please try again.",{
-                position: "top-right",
-                autoClose: 2000,
-                hideProgressBar: true,
-                closeOnClick: true,
-                pauseOnHover: false,
-                draggable: false,
-              }
-            );
+            toast.error("Survey submission failed. Please try again.", {
+              position: "top-right",
+              autoClose: 2000,
+              hideProgressBar: true,
+              closeOnClick: true,
+              pauseOnHover: false,
+              draggable: false,
+            });
           }
         })
         .catch((error) => {
           console.error("🔥 ERROR in sendSurvey catch block");
           console.error("Error submitting survey:", error);
           console.error("Server response:", error.response?.data);
-          toast.error("Error submitting survey", {
+          toast.error("Survey submission failed. Please try again.", {
             position: "top-right",
             autoClose: 2000,
             hideProgressBar: true,
@@ -141,11 +147,13 @@ const UserSurveyForm = () => {
           const formValues = {
             age: "",
             income: "",
+            city: "",
             housing: "",
             rent: "",
             maritalStatus: "",
             children: "",
             riskTolerance: "",
+            savings: "",
           };
 
           response.forEach((item) => {
@@ -155,6 +163,9 @@ const UserSurveyForm = () => {
                 break;
               case "Income":
                 formValues.income = item.content;
+                break;
+              case "City":
+                formValues.city = item.content;
                 break;
               case "Housing":
                 formValues.housing = item.content;
@@ -166,10 +177,14 @@ const UserSurveyForm = () => {
                 formValues.maritalStatus = item.content;
                 break;
               case "Children":
-                formValues.children = item.content === "N/A" ? "" : item.content;
+                formValues.children =
+                  item.content === "N/A" ? "" : item.content;
                 break;
               case "Risk Tolerance":
                 formValues.riskTolerance = item.content;
+                break;
+              case "Savings":
+                formValues.savings = item.content;
                 break;
               default:
                 break;
@@ -179,7 +194,7 @@ const UserSurveyForm = () => {
           formik.setValues(formValues);
           setInitialValuesLoaded(true);
 
-          const hasData = Object.values(formValues).some(val => val !== "");
+          const hasData = Object.values(formValues).some((val) => val !== "");
           setHasExistingData(hasData);
           if (hasData) {
             setIsEditing(false);
@@ -193,7 +208,7 @@ const UserSurveyForm = () => {
       });
   }, []);
 
-  if (!initialValuesLoaded) return <LoadingAnimation/>;
+  if (!initialValuesLoaded) return <LoadingAnimation />;
 
   return (
     <Box
@@ -212,11 +227,15 @@ const UserSurveyForm = () => {
         {hasExistingData && !isEditing && (
           <Button
             variant="outlined"
-            sx={{ mb: 2 , color: colors.greenAccent[500], borderColor: colors.greenAccent[300] }}
+            sx={{
+              mb: 2,
+              color: colors.greenAccent[500],
+              borderColor: colors.greenAccent[300],
+            }}
             onClick={() => setIsEditing(true)}
           >
             Edit
-            <EditIcon/>
+            <EditIcon />
           </Button>
         )}
       </Box>
@@ -256,7 +275,32 @@ const UserSurveyForm = () => {
         }
         disabled={!isEditing}
       />
-
+      <TextField
+        fullWidth
+        margin="normal"
+        id="savings"
+        name="savings"
+        label="Savings (TL)"
+        type="number"
+        value={formik.values.savings}
+        onChange={formik.handleChange}
+        error={formik.touched.savings && Boolean(formik.errors.savings)}
+        helperText={formik.touched.savings && formik.errors.savings}
+        disabled={!isEditing}
+      />
+      <TextField
+        fullWidth
+        margin="normal"
+        id="city"
+        name="city"
+        label="City"
+        placeholder="e.g. Istanbul"
+        value={formik.values.city}
+        onChange={formik.handleChange}
+        error={formik.touched.city && Boolean(formik.errors.city)}
+        helperText={formik.touched.city && formik.errors.city}
+        disabled={!isEditing}
+      />
       <TextField
         fullWidth
         margin="normal"
@@ -270,8 +314,12 @@ const UserSurveyForm = () => {
         helperText={formik.touched.housing && formik.errors.housing}
         disabled={!isEditing}
       >
-        <MenuItem value="renter" disabled={!isEditing}>Renter</MenuItem>
-        <MenuItem value="owner" disabled={!isEditing}>Owner</MenuItem>
+        <MenuItem value="renter" disabled={!isEditing}>
+          Renter
+        </MenuItem>
+        <MenuItem value="owner" disabled={!isEditing}>
+          Owner
+        </MenuItem>
       </TextField>
       {formik.values.housing === "renter" && (
         <TextField
@@ -304,8 +352,12 @@ const UserSurveyForm = () => {
         helperText={formik.touched.maritalStatus && formik.errors.maritalStatus}
         disabled={!isEditing}
       >
-        <MenuItem value="single" disabled={!isEditing}>Single</MenuItem>
-        <MenuItem value="married" disabled={!isEditing}>Married</MenuItem>
+        <MenuItem value="single" disabled={!isEditing}>
+          Single
+        </MenuItem>
+        <MenuItem value="married" disabled={!isEditing}>
+          Married
+        </MenuItem>
       </TextField>
 
       {formik.values.maritalStatus === "married" && (
@@ -343,9 +395,15 @@ const UserSurveyForm = () => {
         helperText={formik.touched.riskTolerance && formik.errors.riskTolerance}
         disabled={!isEditing}
       >
-        <MenuItem value="low" disabled={!isEditing}>Low</MenuItem>
-        <MenuItem value="medium" disabled={!isEditing}>Medium</MenuItem>
-        <MenuItem value="high" disabled={!isEditing}>High</MenuItem>
+        <MenuItem value="low" disabled={!isEditing}>
+          Low
+        </MenuItem>
+        <MenuItem value="medium" disabled={!isEditing}>
+          Medium
+        </MenuItem>
+        <MenuItem value="high" disabled={!isEditing}>
+          High
+        </MenuItem>
       </TextField>
 
       <Button
