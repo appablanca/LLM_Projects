@@ -122,6 +122,11 @@ class ExpenseAnalyzerAgent(Agent):
     def __init__(self, name, role):
         super().__init__(name, role)
 
+    """
+    Extracts all text from the given PDF file using pdfplumber.
+    Iterates through pages and combines the text into a single string.
+    Returns the full text or raises an exception if extraction fails.
+    """
     def extract_text_from_pdf(self, pdf_path: str) -> str:
         print(f"🔍 Extracting text from: {pdf_path}")
         all_text = ""
@@ -140,6 +145,11 @@ class ExpenseAnalyzerAgent(Agent):
             print(f"❌ Error extracting text: {str(e)}")
             raise
 
+    """
+    Splits long text into smaller chunks without breaking lines.
+    Each chunk stays under the specified max character limit.
+    Useful for sending parts of the text to an LLM.
+    """
     def split_text_into_chunks(self, text, max_chars=5000):
         chunks = []
         current = ""
@@ -155,18 +165,20 @@ class ExpenseAnalyzerAgent(Agent):
         print(f"📝 First chunk preview: {chunks[0][:200] if chunks else 'No chunks'}")
         return chunks
 
+
+    """
+    Analyzes the given PDF, extracts and parses its content.
+    Sends chunks of text to an LLM and collects structured JSON output.
+    Calculates spending totals and returns the final structured result.
+    """
     def categorize_pdf(self, pdf_file) -> dict:
-        # Create a temporary file with proper extension
         temp_dir = tempfile.gettempdir()
         temp_path = os.path.join(temp_dir, pdf_file.filename)
         try:
-            # Save the uploaded file temporarily
             pdf_file.save(temp_path)
             print(f"📥 Loading PDF: {temp_path}")
 
             text = self.extract_text_from_pdf(temp_path)
-            print(f"📄 Extracted text length: {len(text)}")
-
             if not text.strip():
                 raise ValueError("PDF boş ya da metin çıkarılamadı.")
 
@@ -186,17 +198,27 @@ class ExpenseAnalyzerAgent(Agent):
                 print(f"📝 Chunk preview: {chunk[:200]}")
                 response = self.generate_response("Şu metni dönüştür:\n" + chunk)
 
+                if isinstance(response, str):
+                    try:
+                        response = json.loads(response)
+                    except Exception as e:
+                        print("❌ JSON dönüşüm hatası:", e)
+                        raise
+
                 try:
                     print(f"🤖 Agent response: {json.dumps(response, indent=2, ensure_ascii=False)}")
-                except json.JSONDecodeError as e:
-                    print("❌ JSON parse hatası:", e)
+                except Exception as e:
+                    print("❌ Agent response parse hatası:", e)
                     print("🔁 Gelen yanıt:\n", response)
-                    raise
 
                 if isinstance(response, dict):
-                    if i == 0:
-                        first_customer_info = response.get("customer_info")
-                        first_card_limit = response.get("card_limit")
+                    customer = response.get("customer_info", {})
+                    card = response.get("card_limit", {})
+                    if not first_customer_info and customer.get("full_name"):
+                        first_customer_info = customer
+                    if not first_card_limit and (card.get("total_card_limit") or card.get("remaining_card_limit")):
+                        first_card_limit = card
+
                     transactions = response.get("transactions", [])
                     all_transactions.extend(transactions)
 
@@ -206,11 +228,10 @@ class ExpenseAnalyzerAgent(Agent):
                     amount_number = float(
                         raw_amount.replace(".", "").replace(",", ".").replace(" TL", "").replace("-", "").strip()
                     )
-                    flow_type = "income" if "-" not in raw_amount and not raw_amount.startswith("-") else "spending"
-                    t["flow"] = flow_type
                     t["amount"] = f"{amount_number:,.2f} TL".replace(",", "X").replace(".", ",").replace("X", ".")
-                except:
-                    t["flow"] = "spending"
+                except (ValueError, TypeError) as e:
+                    print("❌ Amount formatlama hatası:", e)
+
 
             all_category_totals = {}
             for t in all_transactions:
@@ -230,13 +251,13 @@ class ExpenseAnalyzerAgent(Agent):
             final_output = {
                 "type": "account statement",
                 "customer_info": first_customer_info or {"full_name": None},
-                "transactions": all_transactions,
                 "card_limit": first_card_limit or {
                     "total_card_limit": None,
                     "remaining_card_limit": None
                 },
-                "category_totals": all_category_totals
-            }
+                "category_totals": all_category_totals,
+                "transactions": all_transactions
+                }
 
             return final_output
 
@@ -244,6 +265,5 @@ class ExpenseAnalyzerAgent(Agent):
             print("🚫 Hata:", e)
             raise
         finally:
-            # Clean up the temporary file
             if os.path.exists(temp_path):
                 os.remove(temp_path)
