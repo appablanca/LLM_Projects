@@ -1,5 +1,6 @@
 import os, json
 import pdfplumber
+import tempfile
 from agents.baseAgent import Agent
 
 spendingCategories = [
@@ -38,26 +39,26 @@ These transactions must be **excluded from the output** entirely.
 
 Examples of such operations to exclude:
 - Point usage:
-  - “MaxiPuan Used”
-  - “KULLANILAN PUAN”
-  - “PUAN USED”
-  - “REWARD POINT REDEEMED”
-  - “-80,45 TL” with reference to point usage
+  - "MaxiPuan Used"
+  - "KULLANILAN PUAN"
+  - "PUAN USED"
+  - "REWARD POINT REDEEMED"
+  - "-80,45 TL" with reference to point usage
 - Point top-ups:
-  - “%50 PUAN YÜKLEME”
-  - “MAXIMUM GENÇ MARKET PUAN”
-  - “BONUS YÜKLEME”
-  - “PUAN YÜKLEME”
-  - “REWARD POINT ADDED”
+  - "%50 PUAN YÜKLEME"
+  - "MAXIMUM GENÇ MARKET PUAN"
+  - "BONUS YÜKLEME"
+  - "PUAN YÜKLEME"
+  - "REWARD POINT ADDED"
   - Any transaction that indicates loading or redeeming points instead of spending money.
 
 **Important**: These are not real spending and should be skipped entirely.
 
 14. For normal purchase transactions that **mention earned reward points**, such as:
-  - “KAZANILANMAXİPUAN: 0,02”
-  - “EARNED REWARD POINTS: 0.05”
-  - “KAZANILAN PUAN”
-  - “BONUS KAZANIMI”
+  - "KAZANILANMAXİPUAN: 0,02"
+  - "EARNED REWARD POINTS: 0.05"
+  - "KAZANILAN PUAN"
+  - "BONUS KAZANIMI"
 
 Include these transactions, but **remove any reward point references** from the `description` field.  
 The description should only contain relevant and clean purchase information (e.g., store name, location, brand, etc.), **not reward metadata**.
@@ -70,13 +71,13 @@ Examples:
 
 Examples of such transactions to exclude:
 - Any description that includes:
-  - “HESAPTAN AKTARIM”
-  - “TRANSFER”
-  - “HAVALE”
-  - “EFT”
-  - “FAST”
-  - “PARA AKTARIMI”
-  - “MONEY MOVEMENT”
+  - "HESAPTAN AKTARIM"
+  - "TRANSFER"
+  - "HAVALE"
+  - "EFT"
+  - "FAST"
+  - "PARA AKTARIMI"
+  - "MONEY MOVEMENT"
 - These are internal account actions and should **not** be included in the `transactions` list.
 
 
@@ -155,7 +156,9 @@ class ExpenseAnalyzerAgent(Agent):
         return chunks
 
     def categorize_pdf(self, pdf_file) -> dict:
-        temp_path = os.path.join('/tmp', pdf_file.filename)
+        # Create a temporary file with proper extension
+        temp_dir = tempfile.gettempdir()
+        temp_path = os.path.join(temp_dir, pdf_file.filename)
         try:
             # Save the uploaded file temporarily
             pdf_file.save(temp_path)
