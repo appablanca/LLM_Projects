@@ -65,12 +65,13 @@ class Orcestrator(Agent):
         if self.conversation_history:
             last_turn = self.conversation_history[-1]
             last_agent = last_turn["agent_key"]
-            last_response = last_turn["agent_response"]
-
-            # Eğer son cevap bir soruyla bittiyse, devam etmek mantıklıdır
-        if last_response.strip().endswith("?") or "?" in last_response.split()[-3:]:
+            last_response = last_turn["agent_response"] 
+                # Eğer son cevap bir soruyla bittiyse, devam etmek mantıklıdır
+            if last_response and (last_response.strip().endswith("?") or "?" in last_response.split()[-3:]):              
                 print(f"↪️ Agent {last_agent} asked a question, routing reply back to it.")
                 return last_agent
+
+        
         
         # Yoksa yeniden karar ver
         contextual_prompt = self.build_contextual_prompt(user_input)
