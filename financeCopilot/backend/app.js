@@ -48,6 +48,7 @@ const loginRoute = require("./src/routes/login.js");
 const userPanelRoute = require("./src/routes/userPanel.js");
 const generatorRoute = require("./src/routes/generator.js");
 const copilotRoute = require("./src/routes/copilot.js");
+const transactionsRoute = require("./src/routes/transactions.js")
 
 app.use(bodyParser.urlencoded({ extended: false }));
 
@@ -83,7 +84,7 @@ app.use("/userPanel", userPanelRoute);
 app.use("/generator", generatorRoute);
 app.use("/login", loginRoute);
 app.use("/copilot", copilotRoute);
-
+app.use('/transactions', transactionsRoute); 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
 mongoose

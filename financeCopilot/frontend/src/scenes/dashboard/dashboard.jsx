@@ -1,15 +1,19 @@
-import React, { useEffect, useState,useContext} from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { Box, Typography, useTheme, Button } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { tokens } from "../../theme";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
-import LightbulbIcon from '@mui/icons-material/Lightbulb';
+import LightbulbIcon from "@mui/icons-material/Lightbulb";
 import { AuthContext } from "../../context/AuthContext";
+import { getTransactions } from "../../util/api";
+import SpendingPieChart from "../../components/SpendingPieChart";
+
 const Dashboard = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const { user } = useContext(AuthContext);
   const [surveyCompleted, setSurveyCompleted] = useState(false);
+  const [categoryTotals, setCategoryTotals] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,6 +23,22 @@ const Dashboard = () => {
     } else {
       setSurveyCompleted(false);
       sessionStorage.setItem("surveyCompleted", "false");
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await getTransactions();
+        console.log("Fetched category totals:", data); // Debug log
+        setCategoryTotals(data.category_totals);
+      } catch (error) {
+        console.error("Failed to fetch transactions:", error);
+      }
+    };
+
+    if (user?.id) {
+      fetchData();
     }
   }, [user]);
 
@@ -43,7 +63,11 @@ const Dashboard = () => {
             border: `1px solid ${colors.grey[300]}`,
           }}
         >
-          <Box display="flex" alignItems="center" justifyContent="space-between">
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="space-between"
+          >
             <Box display="flex" alignItems="center" gap={1}>
               <LightbulbIcon sx={{ color: "yellow" }} />
               <Typography variant="h6" sx={{ color: colors.grey[100] }}>
@@ -52,8 +76,13 @@ const Dashboard = () => {
             </Box>
             {surveyCompleted && (
               <Box display="flex" alignItems="center" gap={1}>
-                <CheckCircleOutlineIcon sx={{ color: colors.greenAccent[400] }} />
-                <Typography variant="body2" sx={{ color: colors.greenAccent[400] }}>
+                <CheckCircleOutlineIcon
+                  sx={{ color: colors.greenAccent[400] }}
+                />
+                <Typography
+                  variant="body2"
+                  sx={{ color: colors.greenAccent[400] }}
+                >
                   100% Completed
                 </Typography>
               </Box>
@@ -75,6 +104,9 @@ const Dashboard = () => {
           >
             Go to Survey
           </Button>
+        </Box>
+        <Box mt={2} sx={{ maxWidth: "700px"}}>
+          <SpendingPieChart categoryTotals={categoryTotals} />
         </Box>
       </Box>
     </Box>

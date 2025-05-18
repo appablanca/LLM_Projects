@@ -18,7 +18,10 @@ import {
   Close,
   HourglassEmpty,
 } from "@mui/icons-material";
-import { sendCopilotMessage } from "../../util/api";
+
+import { toast } from "react-toastify";
+
+import { sendCopilotMessage, saveTransactions } from "../../util/api";
 import { tokens } from "../../theme";
 
 const Copilot = () => {
@@ -37,8 +40,8 @@ const Copilot = () => {
     setMessages([
       {
         sender: "ai",
-        text: "Hello! I'm your Finance Copilot. How can I help you today?"
-      }
+        text: "Hello! I'm your Finance Copilot. How can I help you today?",
+      },
     ]);
   }, []);
 
@@ -58,10 +61,43 @@ const Copilot = () => {
     try {
       const response = await sendCopilotMessage(input, selectedFile);
       console.log("Response from backend:", response); // Debug log
-      
+
       let botMsg;
       if (response?.success && response?.response) {
-        if (typeof response.response === 'string') {
+        // Check if the response contains transaction data
+        if (
+          response.response.transactions &&
+          Array.isArray(response.response.transactions)
+        ) {
+          try {
+            // Save transactions to database
+            const saveResponse = await saveTransactions(
+              response.response.transactions,
+              response.response.category_totals,
+              response.response.card_limit
+            );
+            toast.success("Transactions saved successfully!", {
+              position: "top-right",
+              autoClose: 5000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+            });
+          } catch (saveError) {
+            console.error("Error saving transactions:", saveError);
+            toast.error("Error saving transactions. Please try again.", {
+              position: "top-right",
+              autoClose: 5000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+            });
+          }
+        } else if (typeof response.response === "string") {
           botMsg = response.response;
         } else if (response.response.response) {
           botMsg = response.response.response;
@@ -71,7 +107,7 @@ const Copilot = () => {
       } else {
         botMsg = "No response received.";
       }
-      
+
       animateMessage(userMsg, botMsg);
     } catch (error) {
       console.error("Error in handleSendMessage:", error); // Debug log
@@ -190,9 +226,7 @@ const Copilot = () => {
           </Avatar>
           <Box>
             <Typography variant="h5">Finance Copilot</Typography>
-            <Typography variant="body2">
-              How can I assist you today?
-            </Typography>
+            <Typography variant="body2">How can I assist you today?</Typography>
           </Box>
         </Box>
 

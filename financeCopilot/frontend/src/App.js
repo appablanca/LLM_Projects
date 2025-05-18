@@ -15,6 +15,7 @@ import Dashboard from "./scenes/dashboard/dashboard";
 import Copilot from "./scenes/copilot/copilot";
 import Sidebar from "./scenes/global/sidebar";
 import Profile from "./scenes/profile/profile";
+import Transactions from "./scenes/transactions/transactions";
 
 function AppContent() {
   const [theme, colorMode] = useMode();
@@ -51,6 +52,7 @@ function AppContent() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="copilot" element={<Copilot />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/transactions" element={<Transactions />} />
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

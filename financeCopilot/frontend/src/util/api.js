@@ -177,3 +177,47 @@ export function sendCopilotMessage(message, file) {
   return sendMessageToCopilot(message, file);
 }
 
+async function saveTransactionsAndSpending(transactions, categoryTotals, cardLimit) {
+  try {
+    const response = await axiosInstance.post(`/transactions/saveTransactionsAndSpending`, {
+      transactions,
+      category_totals: categoryTotals,
+      card_limit: cardLimit
+    });
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error saving transactions:",
+      error.response ? error.response.data : error.message
+    );
+    throw new Error(
+      "Failed to save transactions: " +
+        (error.response ? error.response.data : error.message)
+    );
+  }
+}
+
+export function saveTransactions(transactions, categoryTotals, cardLimit) {
+  return saveTransactionsAndSpending(transactions, categoryTotals, cardLimit);
+}
+
+async function getTransactionsAndSpending() {
+  try {
+    const response = await axiosInstance.get(`/transactions/getTransactionsAndSpending`);
+    return response.data.data;
+  } catch (error) {
+    console.error(
+      "Error fetching transactions:",
+      error.response ? error.response.data : error.message
+    );
+    throw new Error(
+      "Failed to fetch transactions: " +
+        (error.response ? error.response.data : error.message)
+    );
+  }
+}
+
+export function getTransactions() {
+  return getTransactionsAndSpending();
+}
+
