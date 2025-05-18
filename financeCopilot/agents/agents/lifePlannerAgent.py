@@ -66,14 +66,40 @@ class LifePlannerAgent(Agent):
             except httpx.HTTPError as e:
                 print(f"Error fetching user data: {e}")
                 return {}
+    async def parse_user_fields(fields):
+      profile = {}
+      for field in fields:
+            key = field["name"].lower().replace(" ", "_")
+            value = field["content"]
+            profile[key] = value
+      return profile        
+              
 
 
     async def get_life_plan(self, user_message):
       try:
         user_data = await self.fetch_user_data()
-        print(f"📎 User data: {user_data}")
+        parsed_profile = await self.parse_user_fields(user_data)
+        formatted_profile = f"""
+          Kullanıcı profili:
+          - Yaş: {parsed_profile.get("age")}
+          - Şehir: {parsed_profile.get("city")}
+          - Gelir: {parsed_profile.get("income")} TL/ay
+          - Kira: {parsed_profile.get("rent")} TL/ay
+          - Birikim: {parsed_profile.get("savings")} TL
+          - Medeni Durum: {parsed_profile.get("marital_status")}
+          - Çocuk: {parsed_profile.get("children")}
+          - Risk Toleransı: {parsed_profile.get("risk_tolerance")}
+          """
+        print(f"📎 User data: {formatted_profile}")
+        
+        prompt = f"""
+        {user_message}
 
-        response = self.model.generate_content(user_message + "User profile: " + json.dumps(user_data))
+        {formatted_profile}
+        """
+
+        response = self.model.generate_content(prompt)
         return json.loads(response.text.strip())
 
       except Exception as e:
