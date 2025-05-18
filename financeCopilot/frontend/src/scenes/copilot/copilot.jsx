@@ -57,9 +57,24 @@ const Copilot = () => {
 
     try {
       const response = await sendCopilotMessage(input, selectedFile);
-      const botMsg = response?.response?.response || "No response received.";
+      console.log("Response from backend:", response); // Debug log
+      
+      let botMsg;
+      if (response?.success && response?.response) {
+        if (typeof response.response === 'string') {
+          botMsg = response.response;
+        } else if (response.response.response) {
+          botMsg = response.response.response;
+        } else {
+          botMsg = JSON.stringify(response.response, null, 2);
+        }
+      } else {
+        botMsg = "No response received.";
+      }
+      
       animateMessage(userMsg, botMsg);
     } catch (error) {
+      console.error("Error in handleSendMessage:", error); // Debug log
       animateMessage(userMsg, "An error occurred. Please try again.");
     } finally {
       setLoading(false);

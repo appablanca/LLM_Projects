@@ -78,7 +78,7 @@ def handle_user_input():
                                 "success": False,
                                 "message": "Error processing the file",
                                 "error": str(e)
-                            }), 500
+                            }), 500     
                     else:
                         return jsonify({
                             "success": False,

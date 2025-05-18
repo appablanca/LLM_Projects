@@ -128,12 +128,20 @@ class ExpenseAnalyzerAgent(Agent):
     def extract_text_from_pdf(self, pdf_path: str) -> str:
         print(f"🔍 Extracting text from: {pdf_path}")
         all_text = ""
-        with pdfplumber.open(pdf_path) as pdf:
-            for page in pdf.pages:
-                text = page.extract_text()
-                if text:
-                    all_text += text + "\n"
-        return all_text
+        try:
+            with pdfplumber.open(pdf_path) as pdf:
+                for page_num, page in enumerate(pdf.pages):
+                    text = page.extract_text()
+                    print(f"📄 Page {page_num + 1} text length: {len(text) if text else 0}")
+                    if text:
+                        all_text += text + "\n"
+            print(f"✅ Total extracted text length: {len(all_text)}")
+            print("📝 First 500 characters of extracted text:")
+            print(all_text[:500])
+            return all_text
+        except Exception as e:
+            print(f"❌ Error extracting text: {str(e)}")
+            raise
 
     def split_text_into_chunks(self, text, max_chars=5000):
         chunks = []
@@ -146,6 +154,8 @@ class ExpenseAnalyzerAgent(Agent):
                 current = line + "\n"
         if current.strip():
             chunks.append(current.strip())
+        print(f"📦 Split text into {len(chunks)} chunks")
+        print(f"📝 First chunk preview: {chunks[0][:200] if chunks else 'No chunks'}")
         return chunks
 
     def categorize_pdf(self, pdf_file) -> dict:
@@ -175,7 +185,9 @@ class ExpenseAnalyzerAgent(Agent):
 
                 for i, chunk in enumerate(chunks):
                     print(f"🚀 Processing chunk {i + 1}/{len(chunks)}")
+                    print(f"📝 Chunk preview: {chunk[:200]}")
                     response = self.generate_response("Şu metni dönüştür:\n" + chunk)
+                    print(f"🤖 Agent response: {json.dumps(response, indent=2, ensure_ascii=False)}")
 
                     if isinstance(response, dict):
                         if i == 0:
@@ -208,8 +220,8 @@ class ExpenseAnalyzerAgent(Agent):
                         total = val + prev_val
                         formatted = f"{total:,.2f} TL".replace(",", "X").replace(".", ",").replace("X", ".")
                         all_category_totals[cat] = formatted
-                    except:
-                        pass
+                    except Exception as e:
+                        print(f"❌ Category total calculation error: {amount_str} — {e}")
 
                 final_output = {
                     "type": "account statement",
@@ -221,6 +233,7 @@ class ExpenseAnalyzerAgent(Agent):
                     },
                     "category_totals": all_category_totals
                 }
+                print(f"🎯 Final output: {json.dumps(final_output, indent=2, ensure_ascii=False)}")
 
                 return final_output
 
