@@ -26,6 +26,7 @@ const validationSchema = yup.object({
   housing: yup.string().required("Required"),
   maritalStatus: yup.string().required("Required"),
   riskTolerance: yup.string().required("Required"),
+  invesmentTerm: yup.string().required("Required"),
   savings: yup.number().required("Required").min(0, "Cannot be negative"),
   children: yup
     .number()
@@ -52,12 +53,14 @@ const UserSurveyForm = () => {
   const formik = useFormik({
     initialValues: {
       age: "",
+      occuption: "",
       income: "",
       city: "",
       housing: "",
       rent: "",
       maritalStatus: "",
       riskTolerance: "",
+      invesmentTerm: "",
       savings: "",
       children: "",
     },
@@ -65,6 +68,7 @@ const UserSurveyForm = () => {
     onSubmit: (values) => {
       const surveyData = [
         { name: "Age", content: String(values.age) },
+        { name: "Occupation", content: String(values.occuption) },
         { name: "Income", content: String(values.income) },
         { name: "Savings", content: String(values.savings) }, // Yeni alan
         { name: "City", content: String(values.city) },
@@ -83,6 +87,7 @@ const UserSurveyForm = () => {
               : "N/A",
         },
         { name: "Risk Tolerance", content: values.riskTolerance },
+        { name: "Investment Term", content: values.invesmentTerm },
       ];
 
       const submitFunction = hasExistingData ? editSurvey : sendSurvey;
@@ -146,6 +151,7 @@ const UserSurveyForm = () => {
         if (Array.isArray(response)) {
           const formValues = {
             age: "",
+            occuption: "",
             income: "",
             city: "",
             housing: "",
@@ -153,6 +159,7 @@ const UserSurveyForm = () => {
             maritalStatus: "",
             children: "",
             riskTolerance: "",
+            invesmentTerm: "",
             savings: "",
           };
 
@@ -160,6 +167,9 @@ const UserSurveyForm = () => {
             switch (item.name) {
               case "Age":
                 formValues.age = item.content;
+                break;
+              case "Occupation":
+                formValues.occuption = item.content;
                 break;
               case "Income":
                 formValues.income = item.content;
@@ -182,6 +192,9 @@ const UserSurveyForm = () => {
                 break;
               case "Risk Tolerance":
                 formValues.riskTolerance = item.content;
+                break;
+              case "Investment Term":
+                formValues.invesmentTerm = item.content;
                 break;
               case "Savings":
                 formValues.savings = item.content;
@@ -258,6 +271,19 @@ const UserSurveyForm = () => {
         disabled={!isEditing}
       />
 
+      <TextField
+        fullWidth
+        margin="normal"
+        id="occupation"
+        name="occupation"
+        label="Occupation"
+        placeholder="e.g. Software Engineer"
+        value={formik.values.occuption}
+        onChange={formik.handleChange}
+        error={formik.touched.occuption && Boolean(formik.errors.occuption)}
+        helperText={formik.touched.occuption && formik.errors.occuption}
+        disabled={!isEditing}
+      />
       <TextField
         fullWidth
         margin="normal"
@@ -409,6 +435,31 @@ const UserSurveyForm = () => {
         </MenuItem>
         <MenuItem value="high" disabled={!isEditing}>
           High
+        </MenuItem>
+      </TextField>
+      <TextField
+        fullWidth
+        margin="normal"
+        select
+        id="invesmentTerm"
+        name="invesmentTerm"
+        label="Investment Term"
+        value={formik.values.invesmentTerm}
+        onChange={formik.handleChange}
+        error={
+          formik.touched.invesmentTerm && Boolean(formik.errors.invesmentTerm)
+        }
+        helperText={formik.touched.invesmentTerm && formik.errors.invesmentTerm}
+        disabled={!isEditing}
+      >
+        <MenuItem value="short" disabled={!isEditing}>
+          Short Term
+        </MenuItem>
+        <MenuItem value="medium" disabled={!isEditing}>
+          Medium Term
+        </MenuItem>
+        <MenuItem value="long" disabled={!isEditing}>
+          Long Term
         </MenuItem>
       </TextField>
 

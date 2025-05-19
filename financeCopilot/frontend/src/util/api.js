@@ -221,3 +221,22 @@ export function getTransactions() {
   return getTransactionsAndSpending();
 }
 
+async function getBudgetPlan() {
+  try {
+    const response = await axiosInstance.post(`/copilot/budget-plan`);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error fetching budget plan:",
+      error.response ? error.response.data : error.message
+    );
+    throw new Error(
+      "Failed to fetch budget plan: " +
+        (error.response ? error.response.data : error.message)
+    );
+  }
+}
+export function getBudget() {
+  return getBudgetPlan();
+}
+

@@ -32,6 +32,7 @@ const Transactions = () => {
     endDate: "",
     minAmount: "",
     maxAmount: "",
+    flow: "", // New filter for flow
   });
 
   useEffect(() => {
@@ -54,7 +55,8 @@ const Transactions = () => {
       const matchesAmount =
         (!filters.minAmount || amountValue >= parseFloat(filters.minAmount)) &&
         (!filters.maxAmount || amountValue <= parseFloat(filters.maxAmount));
-      return matchesCategory && matchesDate && matchesAmount;
+      const matchesFlow = !filters.flow || t.flow === filters.flow; // New flow filter logic
+      return matchesCategory && matchesDate && matchesAmount && matchesFlow;
     });
     setFiltered(result);
   }, [filters, transactions]);
@@ -115,6 +117,19 @@ const Transactions = () => {
           onChange={(e) => setFilters({ ...filters, maxAmount: e.target.value })}
           sx={{ input: { color: colors.grey[800] }, label: { color: colors.grey[800] } }}
         />
+        <FormControl sx={{ minWidth: 150 }}>
+          <InputLabel sx={{ color: colors.grey[800] }}>Flow</InputLabel>
+          <Select
+            value={filters.flow}
+            label="Flow"
+            onChange={(e) => setFilters({ ...filters, flow: e.target.value })}
+            sx={{ color: colors.grey[800] }}
+          >
+            <MenuItem value="">All</MenuItem>
+            <MenuItem value="income">Income</MenuItem>
+            <MenuItem value="spending">Spending</MenuItem>
+          </Select>
+        </FormControl>
       </Box>
 
       <TableContainer component={Paper} sx={{ maxHeight: "70vh", backgroundColor: colors.primary[500] }}>
@@ -125,6 +140,7 @@ const Transactions = () => {
               <TableCell sx={{ color: colors.grey[100], backgroundColor: colors.primary[700] }}>Category</TableCell>
               <TableCell sx={{ color: colors.grey[100], backgroundColor: colors.primary[700] }}>Description</TableCell>
               <TableCell align="right" sx={{ color: colors.grey[100], backgroundColor: colors.primary[700] }}>Amount</TableCell>
+              <TableCell sx={{ color: colors.grey[100], backgroundColor: colors.primary[700] }}>Flow</TableCell> {/* New column */}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -134,6 +150,7 @@ const Transactions = () => {
                 <TableCell sx={{ color: colors.grey[100] }}>{tx.spendingCategory}</TableCell>
                 <TableCell sx={{ color: colors.grey[100] }}>{tx.description}</TableCell>
                 <TableCell align="right" sx={{ color: colors.grey[100] }}>{tx.amount}</TableCell>
+                <TableCell sx={{ color: colors.grey[100] }}>{tx.flow}</TableCell> {/* New data */}
               </TableRow>
             ))}
           </TableBody>
