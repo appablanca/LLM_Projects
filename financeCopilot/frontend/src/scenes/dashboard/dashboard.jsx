@@ -31,6 +31,8 @@ const Dashboard = () => {
       try {
         const data = await getTransactions();
         console.log("Fetched category totals:", data); 
+        console.log("Category totals type:", typeof data.category_totals);
+        console.log("Category totals keys:", Object.keys(data.category_totals));
         setCategoryTotals(data.category_totals);
       } catch (error) {
         console.error("Failed to fetch transactions:", error);
