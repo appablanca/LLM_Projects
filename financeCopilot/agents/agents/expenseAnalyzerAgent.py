@@ -2,7 +2,7 @@ import os, json
 import pdfplumber
 import tempfile
 from agents.baseAgent import Agent
-
+import google.generativeai as genai
 spendingCategories = [
     "food_drinks", "clothing_cosmetics", "subscription", "groceries",
     "transportation", "entertainment", "stationery_books", "technology",
@@ -119,8 +119,19 @@ Example Target JSON Structure:
 """
 
 class ExpenseAnalyzerAgent(Agent):
-    def __init__(self, name, role):
-        super().__init__(name, role)
+    def __init__(self):
+        super().__init__(name="Budget Planner Agent", role=expenseAnalyzerRole)
+        self.model = genai.GenerativeModel(
+            model_name="gemini-2.0-flash",
+            generation_config={
+                "temperature": 0.3,
+                "top_p": 0.95,
+                "top_k": 64,
+                "max_output_tokens": 8192,
+                "response_mime_type": "application/json",
+            },
+            system_instruction=self.role,
+        )
 
     """
     Extracts all text from the given PDF file using pdfplumber.
