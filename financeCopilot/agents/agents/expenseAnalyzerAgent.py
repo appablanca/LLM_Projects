@@ -120,7 +120,9 @@ Example Target JSON Structure:
 
 class ExpenseAnalyzerAgent(Agent):
     def __init__(self,name,role):
-        super().__init__(name="Budget Planner Agent", role=expenseAnalyzerRole)
+        #super().__init__(name="Budget Planner Agent", role=expenseAnalyzerRole)
+        super().__init__(name=name, role=role)
+
         self.model = genai.GenerativeModel(
             model_name="gemini-2.0-flash",
             generation_config={
