@@ -4,8 +4,8 @@ const axios = require("axios");
 const Stock = require("../models/stockInfo");
 // TWELVE_DATA_API_KEY= "39047c1681c8452ba5b4fda546541a10" //femp
 // TWELVE_DATA_API_KEY= "8df44756db4c4d379ab253b05fefc6da" //feyzieren
-// TWELVE_DATA_API_KEY= "355b0b5039e14dbf87a85a61e7a44715" //feyzibattle
-TWELVE_DATA_API_KEY= "13a55b9967904dc6b7dedf185b986648" //20feyzi02
+TWELVE_DATA_API_KEY= "355b0b5039e14dbf87a85a61e7a44715" //feyzibattle
+// TWELVE_DATA_API_KEY= "13a55b9967904dc6b7dedf185b986648" //20feyzi02
 
 const BASE_URL = "https://api.twelvedata.com/time_series";
 
@@ -15,7 +15,9 @@ exports.fetchAllStocksFromFile = async (req, res) => {
   let symbols;
   try {
     const fileData = fs.readFileSync(symbolsPath, "utf8");
-    symbols = fileData.split("\n").map(line => line.trim()).filter(line => line);
+    // symbols = fileData.split("\n").map(line => line.trim()).filter(line => line);
+    symbols = fileData.split(/\r?\n/).map(line => line.trim()).filter(line => line);
+
   } catch (err) {
     console.error("Error reading symbols.txt:", err);
     return res.status(500).json({ message: "Failed to read symbol list." });
@@ -31,7 +33,6 @@ exports.fetchAllStocksFromFile = async (req, res) => {
             .select("symbol")
             .lean();
         if (existingStock) {
-            console.log(`Symbol ${symbol} already exists in the database.`);
             results.push({ symbol, status: "Already exists" });
             continue;
         }
@@ -70,18 +71,20 @@ exports.fetchAllStocksFromFile = async (req, res) => {
         stockDoc = new Stock({
           symbol,
           data: formattedData,
+          type: 0, 
           deleted: 0,
         });
       }
 
       await stockDoc.save();
+      console.log(`Data for ${symbol} saved successfully.`);
       results.push({ symbol, status: "Saved", entries: formattedData.length });
     } catch (err) {
       console.error(`Error for symbol ${symbol}:`, err.response?.data || err.message);
       results.push({ symbol, status: "Error", message: err.message });
     }
   }
-
+  console.log("---------------------------");
   return res.status(200).json({message: "Data fetched successfully"});
 };
 
@@ -90,14 +93,15 @@ exports.getStockData = async (req, res) => {
   const { symbol } = req.body;
 
   try {
-    const stockData = await Stock.findOne({ symbol: symbol })
-      .select("symbol data")
+    const stockData = await Stock.findOne({ symbol, deleted: 0, type: 0 })
+      .select("symbol data type deleted")
       .lean();
     if (!stockData) {
       return res.status(404).json({ message: "Stock not found" });
     }
-    const { symbol: stockSymbol, data } = stockData;
-    const formattedData = data.map((entry) => ({
+    // Only include non-deleted entries
+    const filteredData = (stockData.data || []).filter(entry => entry.deleted === 0);
+    const formattedData = filteredData.map((entry) => ({
       date: entry.date,
       open: entry.open,
       high: entry.high,
@@ -105,9 +109,69 @@ exports.getStockData = async (req, res) => {
       close: entry.close,
       volume: entry.volume,
     }));
-    return res.status(200).json({ symbol: stockSymbol, data: formattedData });
+    return res.status(200).json({
+      symbol: stockData.symbol,
+      type: stockData.type,
+      data: formattedData
+    });
+  } catch (err) {
+    console.error("Error fetching stock data:", err);
+    return res.status(500).json({ message: "Failed to fetch stock data" });
   }
-  catch (err) {
+};
+
+exports.fetchStockDataFromAPI = async (req, res) => {
+  const { symbol } = req.body;
+
+  try {
+    const response = await axios.get(BASE_URL, {
+      params: {
+        symbol: symbol,
+        interval: "1week",
+        outputsize: 52,
+        apikey: TWELVE_DATA_API_KEY,
+      },
+    });
+
+    const symbolData = response.data;
+
+    if (!symbolData || !Array.isArray(symbolData.values)) {
+      return res.status(404).json({ message: "No data returned" });
+    }
+
+    // Format data according to schema (include deleted: 0)
+    const formattedData = symbolData.values.map((entry) => ({
+      date: new Date(entry.datetime),
+      open: parseFloat(entry.open),
+      high: parseFloat(entry.high),
+      low: parseFloat(entry.low),
+      close: parseFloat(entry.close),
+      volume: parseFloat(entry.volume),
+      deleted: 0,
+    }));
+
+    // Upsert stock document according to schema
+    let stockDoc = await Stock.findOne({ symbol });
+    if (stockDoc) {
+      stockDoc.data = formattedData;
+      stockDoc.type = 0;
+      stockDoc.deleted = 0;
+    } else {
+      stockDoc = new Stock({
+        symbol,
+        data: formattedData,
+        type: 0,
+        deleted: 0,
+      });
+    }
+    await stockDoc.save();
+
+    return res.status(200).json({
+      symbol,
+      type: stockDoc.type,
+      data: formattedData,
+    });
+  } catch (err) {
     console.error("Error fetching stock data:", err);
     return res.status(500).json({ message: "Failed to fetch stock data" });
   }

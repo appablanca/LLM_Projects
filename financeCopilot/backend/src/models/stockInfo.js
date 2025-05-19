@@ -42,6 +42,10 @@ const stockInfoSchema = new Schema({
     type: [stockEntrySchema],
     default: [],
   },
+  type: {
+    type: Number, // 0 for stock, 1 for crypto
+    required: true,
+  },
   deleted: {
     type: Number,
     default: 0,
