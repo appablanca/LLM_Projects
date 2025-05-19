@@ -126,12 +126,21 @@ const Copilot = () => {
   };
 
   const animateMessage = (prevUserMsg, botText) => {
+    if (!botText || typeof botText !== "string") {
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        prevUserMsg,
+        { sender: "ai", text: "Sorry, no response available." },
+      ]);
+      scrollToBottom();
+      return;
+    }
+
     let i = 0;
     const interval = setInterval(() => {
       if (i <= botText.length) {
-        setMessages([
-          ...messages,
-          prevUserMsg,
+        setMessages((prevMessages) => [
+          ...prevMessages.slice(0, -1),
           { sender: "ai", text: botText.slice(0, i) },
         ]);
         i++;
