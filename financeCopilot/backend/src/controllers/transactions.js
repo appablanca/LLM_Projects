@@ -112,15 +112,19 @@ exports.saveTransactionsAndSpending = async (req, res) => {
 
 exports.getTransactionsAndSpending = async (req, res) => {
   try {
-    if (!req.session.user || !req.session.user.id) {
-      return res.status(401).json({
-        success: false,
-        message: 'User not authenticated'
-      });
+    let userId = req.query.userId;
+    // Check if user is authenticated
+    // If userId is not provided in the query, use the session userId
+    if (!userId) {
+      if (!req.session || !req.session.user) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not authenticated'
+        });
+      }
+      userId = req.session.user.id;
     }
-
-    const userId = req.session.user.id;
-
+    
     // Verify user exists
     const user = await User.findById(userId);
     if (!user) {

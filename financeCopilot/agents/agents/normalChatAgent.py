@@ -1,6 +1,6 @@
 import json
 from agents.baseAgent import Agent
-
+import google.generativeai as genai
 normalChatAgentRole = f"""
         You are a helpful assistant that answers general user questions.
         

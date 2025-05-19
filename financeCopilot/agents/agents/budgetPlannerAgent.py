@@ -2,9 +2,9 @@ import os
 import requests
 import google.generativeai as genai
 from dotenv import load_dotenv
-from datetime import datetime
-from collections import defaultdict
-import agents.baseAgent as Agent
+
+from agents.baseAgent import Agent
+import json
 
 # Load environment variables
 load_dotenv()
@@ -28,18 +28,23 @@ budgetPlannerAgentRole= """
     - Use the provided data to support your analysis.
     - Avoid unnecessary jargon and technical terms.
     
-    #Note:
-    - You ricieve the all transcations of the user. When you analyze it you can filter the transcations by the flow type (income or spending) and the spending category. 
-    - You can also filter the transcations by date.
     
     #Language:
-    - Use the same language as the user.
+    - Use only English.
     
     This is the expected json response format:
-    
+    '''json
     {
+  "user_info": {
+    "name": "John Doe",
+    "age": 30,
+    "location": "New York",
+    "rent": 2000,
+    "income": 12000,
+    "savings": 5000
+  },    
   "financial_summary": {
-    "monthly_income": 12000,
+    "monthly_income": 12000 (You should calculate this from the user transcations),
     "total_spending": 13500,
     "net_difference": -1500,
     "summary_comment": "Your monthly budget is in deficit."
@@ -69,15 +74,23 @@ budgetPlannerAgentRole= """
   "improvement_recommendations": [
     "Try to keep fixed expenses under 50% of your income."
   ]
-}
+  "financial_health": {
+    "status": "Good",
+    "percentage_of_financial_health": 80,
+    "recommendation": "Continue to monitor your spending and adjust as necessary."
+  }
+}   
+  '''json
+    - The response should be in JSON format.
     
-    
-
+    #Note:
+    - The user data is provided in the input.
+    - When giving suggestions, consider the user's financial situation and provide realistic options and give specific suggestions, examples.
 """
 
 class BudgetPlannerAgent(Agent):
-    def __init__(self):
-        super().__init__(name="Budget Planner Agent", role=budgetPlannerAgentRole)
+    def __init__(self, name, role):
+        super().__init__(name=name, role=role)
         self.model = genai.GenerativeModel(
             model_name="gemini-2.0-flash",
             generation_config={
@@ -90,61 +103,44 @@ class BudgetPlannerAgent(Agent):
             system_instruction=self.role,
         )
 
-    # Convert amount string ("1.234,56 TL") to float
-    def parse_amount(amount_str):
-        return float(amount_str.replace(".", "").replace(",", ".").replace(" TL", ""))
+    
 
     # Fetch user data from backend API
     def get_user_data(self,user_id):
         try:
-            response = requests.get(f"{BACKEND_URL}/transactions?userId={user_id}")
-            response.raise_for_status()
-            records = response.json()
+            userSpendings = requests.get(f"{BACKEND_URL}/transactions/getTransactionsAndSpending?userId={user_id}")
+            userInfo = requests.get(f"{BACKEND_URL}/userPanel/getFields?userId={user_id}")
+            userSpendings.raise_for_status()
+            userInfo.raise_for_status()
+            spending_data = userSpendings.json()
+            user_info_data = userInfo.json()
+            records = {
+                "user_info": user_info_data,
+                "spending_data": spending_data
+            } 
+            return records
         except Exception as e:
             print(f"API error: {e}")
-            return 0.0, 0.0, {}
+            return None
 
-        income_total = 0.0
-        spending_total = 0.0
-        category_totals = defaultdict(float)
-
-        for record in records:
-            try:
-                amount = self.parse_amount(record["amount"])
-                date = datetime.strptime(record["date"], "%d.%m.%Y")
-                flow = record["flow"]
-                category = record.get("spendingCategory", "unknown")
-
-                if flow == "income":
-                    income_total += amount
-                elif flow == "spending":
-                    spending_total += amount
-                    category_totals[category] += amount
-            except Exception as e:
-                print(f"Data processing error: {e}")
-
-        return income_total, spending_total, category_totals
-
-    def generate_prompt(income, spending, category_totals):
-        lines = [f"Total Income: {income:.2f} TL", f"Total Spending: {spending:.2f} TL", "", "Spending by Category:"]
-        for category, total in category_totals.items():
-            lines.append(f"- {category}: {total:.2f} TL")
-        lines.append("")
-        lines.append("Please analyze these transactions. Which categories show overspending? Where can the user save money? Give a summary of their financial health and improvement suggestions.")
+    def generate_prompt(self, userInfo):
+        lines = []
+        lines.append("== User Information ==\n")
+        lines.append(json.dumps(userInfo, indent=2, ensure_ascii=False))
         return "\n".join(lines)
 
     # Main function
     def run_budget_analysis(self,user_id):
-        income, spending, category_totals = self.get_user_data(user_id)
-        if income == 0 and spending == 0:
+        userInfo = self.get_user_data(user_id)
+        if not userInfo:
             print("No data retrieved for user.")
-            return
+            return None
 
-        prompt = generate_prompt(income, spending, category_totals)
+        prompt = self.generate_prompt(userInfo)
         print("\n== Prompt Sent to Gemini ==\n")
         print(prompt)
         print("\n== Agent Response ==\n")
-        result = ask_gemini(prompt)
-        print(result)
-
-   
+        response = self.model.generate_content(prompt)
+        return json.loads(response.text.strip())
+      
+        

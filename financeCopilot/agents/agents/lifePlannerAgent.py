@@ -123,16 +123,16 @@ class LifePlannerAgent(Agent):
             parsed_profile = await self.parse_user_fields(user_data)
 
             formatted_profile = f"""
-Kullanıcı profili:
-- Yaş: {parsed_profile.get("age")}
-- Şehir: {parsed_profile.get("city")}
-- Gelir: {parsed_profile.get("income")} TL/ay
-- Kira: {parsed_profile.get("rent")} TL/ay
-- Birikim: {parsed_profile.get("savings")} TL
-- Medeni Durum: {parsed_profile.get("marital_status")}
-- Çocuk: {parsed_profile.get("children")}
-- Risk Toleransı: {parsed_profile.get("risk_tolerance")}
-"""
+            Kullanıcı profili:
+            - Yaş: {parsed_profile.get("age")}
+            - Şehir: {parsed_profile.get("city")}
+            - Gelir: {parsed_profile.get("income")} TL/ay
+            - Kira: {parsed_profile.get("rent")} TL/ay
+            - Birikim: {parsed_profile.get("savings")} TL
+            - Medeni Durum: {parsed_profile.get("marital_status")}
+            - Çocuk: {parsed_profile.get("children")}
+            - Risk Toleransı: {parsed_profile.get("risk_tolerance")}
+            """
 
             inflation = macro_data.get("inflationRate", "Bilinmiyor")
             usd_to_try = macro_data.get("usdToTry", "Bilinmiyor")
@@ -148,11 +148,11 @@ Kullanıcı profili:
             """
 
             prompt = f"""
-{user_message}
-Lütfen aşağıdaki kullanıcı profilini ve ekonomik göstergeleri kullanarak detaylı, zamana yayılmış, gerçekçi bir hayat planı oluştur.
-{formatted_profile}
-{macro_info}
-"""
+            {user_message}
+            Lütfen aşağıdaki kullanıcı profilini ve ekonomik göstergeleri kullanarak detaylı, zamana yayılmış, gerçekçi bir hayat planı oluştur.
+            {formatted_profile}
+            {macro_info}
+            """
 
             print(f"📎 Prompt sent to model:\n{prompt}")
 

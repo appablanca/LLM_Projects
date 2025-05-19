@@ -1,6 +1,7 @@
 from agents.baseAgent import Agent
 import os,json,httpx
 from dotenv import load_dotenv
+import google.generativeai as genai
 
 load_dotenv()
 BACKEND_URL = os.getenv("BACKEND_URL")

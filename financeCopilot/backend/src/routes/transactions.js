@@ -180,6 +180,11 @@ router.post('/saveTransactionsAndSpending', transactionsController.saveTransacti
  * /transactions/getTransactionsAndSpending:
  *   get:
  *     tags: [Transactions]
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         schema:
+ *           type: string
  *     summary: Get transactions and spending data
  *     description: Retrieve user's transactions and category spending data
  *     responses:

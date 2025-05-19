@@ -1,4 +1,6 @@
 import json
+import google.generativeai as genai
+
 from agents.baseAgent import Agent
 
 from agents.lifePlannerAgent import LifePlannerAgent, lifePlannerAgentRole
@@ -39,7 +41,7 @@ agents = {
     "lifePlannerAgent": LifePlannerAgent("LifePlannerAgent", lifePlannerAgentRole),
     "expenseAnalyzerAgent": ExpenseAnalyzerAgent("ExpenseAnalyzerAgent", expenseAnalyzerRole),
     "normalChatAgent": NormalChatAgent("NormalChatAgent", normalChatAgentRole),
-    "investmentAdvisorAgent": InvestmentAdvisorAgent("InvestmentAdvisor", investmentAdvisorAgentRole)
+    "investmentAdvisorAgent": InvestmentAdvisorAgent("InvestmentAdvisorAgent", investmentAdvisorAgentRole)
 }   
 
 

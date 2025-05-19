@@ -5,6 +5,7 @@ from agents.expenseAnalyzerAgent import ExpenseAnalyzerAgent, expenseAnalyzerRol
 from agents.normalChatAgent import NormalChatAgent, normalChatAgentRole
 from agents.orcestratorAgent import Orcestrator, orcestratorAgentRole, agents
 from agents.lifePlannerAgent import LifePlannerAgent, lifePlannerAgentRole
+from agents.budgetPlannerAgent import BudgetPlannerAgent, budgetPlannerAgentRole
 import asyncio
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -33,6 +34,8 @@ api_key = os.getenv("GEMINI_API_KEY")
 
 orchestrator = Orcestrator("Orchestrator", orcestratorAgentRole)
 
+# Initialize BudgetPlannerAgent
+budget_planner = BudgetPlannerAgent("BudgetPlannerAgent", budgetPlannerAgentRole)
 
 @app.route("/chat", methods=["POST", "OPTIONS"])
 def handle_user_input():
@@ -144,6 +147,42 @@ def handle_user_input():
             500,
         )
 
+@app.route("/budget-analysis", methods=["POST", "OPTIONS"])
+def handle_budget_analysis():
+    """
+    Endpoint to handle budget analysis requests.
+    """
+    if request.method == "OPTIONS":
+        response = jsonify({"status": "ok"})
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add(
+            "Access-Control-Allow-Headers", "Content-Type,Authorization"
+        )
+        response.headers.add("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+        return response
+
+    try:
+        # Get user_id from request
+        userId = request.json.get("userId")
+        
+        if not userId:
+            return jsonify({"success": False, "message": "userId is required"}), 400
+
+        # Run budget analysis
+        result = budget_planner.run_budget_analysis(userId)
+        
+        if not result:
+            return jsonify({"success": False, "message": "No data available for analysis"}), 404
+
+        return jsonify({"success": True, "response": result})
+
+    except Exception as e:
+        print(f"Error in handle_budget_analysis: {e}")
+        return jsonify({
+            "success": False,
+            "message": "An error occurred while processing your request",
+            "error": str(e)
+        }), 500
 
 if __name__ == "__main__":
     print("Starting Flask server on port 5001...")
