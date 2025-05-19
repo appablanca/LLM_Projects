@@ -30,7 +30,7 @@ const Dashboard = () => {
     const fetchData = async () => {
       try {
         const data = await getTransactions();
-        console.log("Fetched category totals:", data); // Debug log
+        console.log("Fetched category totals:", data); 
         setCategoryTotals(data.category_totals);
       } catch (error) {
         console.error("Failed to fetch transactions:", error);

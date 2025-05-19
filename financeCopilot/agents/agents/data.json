@@ -1,0 +1,12 @@
+{
+    "inflationRate": "37.86",
+    "usdToTry": "38.855",
+    "carPriceIndex": "950515",
+    "housingPriceIndex": "32.3",
+    "sources": {
+      "inflationRate": "TÜİK, Nisan 2025 TÜFE",
+      "usdToTry": "ExchangeRates.org, 16 Mayıs 2025",
+      "carPriceIndex": "Ekonomi ve Finans, Nisan 2025",
+      "housingPriceIndex": "TCMB, Mart 2025"
+    }
+  }

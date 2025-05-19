@@ -39,8 +39,7 @@ def handle_user_input():
     """
     Chat bot endpoint to handle user input and return a response.
     """
-    print("Received request:", request.method)
-    print("Headers:", dict(request.headers))
+   
 
     if request.method == "OPTIONS":
         response = jsonify({"status": "ok"})
@@ -52,10 +51,7 @@ def handle_user_input():
         return response
 
     try:
-        print("Request data:", request.get_data())
-        print("Request files:", request.files)
-        print("Request form:", request.form)
-
+    
         # Get message from form data
         user_text = request.form.get("message")
         uploaded_file = request.files.get("file")
@@ -66,11 +62,8 @@ def handle_user_input():
                 400,
             )
 
-        agent_key = (
-            orchestrator.get_agent_key(user_text)
-            if user_text
-            else "expenseAnalyzerAgent"
-        )
+        agent_key = orchestrator.get_agent_key(user_text)         
+        
         print(
             f"📎 Uploaded file: {uploaded_file.filename if uploaded_file else 'None'}"
         )
@@ -78,11 +71,14 @@ def handle_user_input():
         for key in agents.keys():
             if key.lower() in agent_key:
                 print(f"Selected Agent: {key}")
-                if key == "expenseAnalyzerAgent":
+                if key == "expenseanalyzeragent":
                     if uploaded_file and uploaded_file.filename:
                         try:
                             result = agents[key].categorize_pdf(uploaded_file)
-
+                            orchestrator.conversation_history.append(
+                                {"user_input": user_text, "agent_key": agent_key, "agent_response": result}
+                            )
+                            return jsonify({"success": True, "response": result})
                         except Exception as e:
                             print(f"🚫 Error processing file: {str(e)}")
                             return (
@@ -105,16 +101,31 @@ def handle_user_input():
                             ),
                             400,
                         )
-                elif key == "lifePlannerAgent":
+                elif key == "lifeplanneragent":
                     # Run the async function in a synchronous context
                     result = asyncio.run(agents[key].get_life_plan(user_text))
+                    orchestrator.conversation_history.append(
+                        {"user_input": user_text, "agent_key": agent_key, "agent_response": result}
+                    )
+                    return jsonify({"success": True, "response": result})
 
+                elif key == "invesmentadvisoragent":
+                    result = asyncio.run(agents[key].get_financal_advise())
+                    orchestrator.conversation_history.append(
+                        {"user_input": user_text, "agent_key": agent_key, "agent_response": result}
+                    )
+                    return jsonify({"success": True, "response": result})
+                    
                 else:
                     result = agents[key].generate_response(user_text)
+                    orchestrator.conversation_history.append(
+                        {"user_input": user_text, "agent_key": agent_key, "agent_response": result}
+                    )
+                    return jsonify({"success": True, "response": result})
 
+        # If no agent was found, use the normal chat agent
         print("⚠️ Unknown agent key:", agent_key)
         result = agents["normalChatAgent"].generate_response(user_text)
-
         orchestrator.conversation_history.append(
             {"user_input": user_text, "agent_key": agent_key, "agent_response": result}
         )

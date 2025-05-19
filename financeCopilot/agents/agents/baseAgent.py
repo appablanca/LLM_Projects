@@ -27,6 +27,6 @@ class Agent:
 
     def generate_response(self, prompt):
         print(f"📝 Prompt sent to {self.name}:\n{prompt[:500]}...")
-        response = self.chat.send_message(prompt)
+        response = self.model.generate_content(prompt)
         print(f"🧾 Raw response from {self.name}:\n{response.text[:500]}...")
         return response.text.strip()

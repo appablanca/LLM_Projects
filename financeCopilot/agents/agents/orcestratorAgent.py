@@ -50,7 +50,7 @@ class Orcestrator(Agent):
     
     def build_contextual_prompt(self, user_input):
         prompt = "Below is a log of previous conversation steps:\n"
-        for step in self.conversation_history[-5:]:  # son 5 mesaj yeterli
+        for step in self.conversation_history[-5:]:  
             prompt += f"User: {step['user_input']}\n"
             prompt += f"Agent: {step['agent_key']}\n"
             prompt += f"Response: {step['agent_response']}\n"
@@ -66,14 +66,17 @@ class Orcestrator(Agent):
             last_turn = self.conversation_history[-1]
             last_agent = last_turn["agent_key"]
             last_response = last_turn["agent_response"] 
-                # Eğer son cevap bir soruyla bittiyse, devam etmek mantıklıdır
-            if last_response and (last_response.strip().endswith("?") or "?" in last_response.split()[-3:]):              
+            # Check if last_response is a string before calling strip()
+            if isinstance(last_response, str) and (last_response.strip().endswith("?") or "?" in last_response.split()[-3:]):              
                 print(f"↪️ Agent {last_agent} asked a question, routing reply back to it.")
                 return last_agent
-
+            # If last_response is a dict, check if it contains a question
+            elif isinstance(last_response, dict) and "response" in last_response:
+                response_text = last_response["response"]
+                if isinstance(response_text, str) and (response_text.strip().endswith("?") or "?" in response_text.split()[-3:]):
+                    print(f"↪️ Agent {last_agent} asked a question, routing reply back to it.")
+                    return last_agent
         
-        
-        # Yoksa yeniden karar ver
         contextual_prompt = self.build_contextual_prompt(user_input)
         response = self.model.generate_content(contextual_prompt)
         agent_key = response.text.strip().lower()
@@ -81,7 +84,7 @@ class Orcestrator(Agent):
 
         valid_keys = ["lifeplanneragent", "expenseanalyzeragent", "normalchatagent", "investmentadvisoragent"]
         for key in valid_keys:
-            if key == agent_key:
+            if key in agent_key:
                 return key
 
         return "normalchatagent"
