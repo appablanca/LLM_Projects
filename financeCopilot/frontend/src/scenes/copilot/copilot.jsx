@@ -97,21 +97,16 @@ const Copilot = () => {
               progress: undefined,
             });
           }
-        } else if (typeof response.response === "string") {
-          botMsg = response.response;
-        } else if (response.response.response) {
-          botMsg = response.response.response;
-        } else {
-          botMsg = JSON.stringify(response.response, null, 2);
         }
+        botMsg = JSON.stringify(response.response, null, 2);
       } else {
         botMsg = "No response received.";
       }
 
-      animateMessage(userMsg, botMsg);
+      setMessages((prev) => [...prev, userMsg, { sender: "ai", text: botMsg }]);
     } catch (error) {
       console.error("Error in handleSendMessage:", error); // Debug log
-      animateMessage(userMsg, "An error occurred. Please try again.");
+      setMessages((prev) => [...prev, userMsg, { sender: "ai", text: "An error occurred. Please try again." }]);
     } finally {
       setLoading(false);
       setSelectedFile(null);
@@ -126,29 +121,7 @@ const Copilot = () => {
   };
 
   const animateMessage = (prevUserMsg, botText) => {
-    if (!botText || typeof botText !== "string") {
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        prevUserMsg,
-        { sender: "ai", text: "Sorry, no response available." },
-      ]);
-      scrollToBottom();
-      return;
-    }
-
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i <= botText.length) {
-        setMessages((prevMessages) => [
-          ...prevMessages.slice(0, -1),
-          { sender: "ai", text: botText.slice(0, i) },
-        ]);
-        i++;
-      } else {
-        clearInterval(interval);
-        scrollToBottom();
-      }
-    }, 15);
+    // Animation disabled temporarily
   };
 
   const handleFileSelect = (e) => {
