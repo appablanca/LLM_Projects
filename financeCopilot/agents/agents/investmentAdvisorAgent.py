@@ -76,7 +76,7 @@ while giving exlnations, give spesfic data from the historical data and current 
 class InvestmentAdvisorAgent(Agent):
     
     def __init__(self, name, role):
-        super().__init__(name="Budget Planner Agent", role=investmentAdvisorAgentRole)
+        super().__init__(name="Investment Advice Agent", role=investmentAdvisorAgentRole)
         self.model = genai.GenerativeModel(
             model_name="gemini-2.0-flash",
             generation_config={
