@@ -2,3 +2,4 @@ node_modules/
 venv/
 .env/
 __pycache__/
+extracted_text_debug.txt/

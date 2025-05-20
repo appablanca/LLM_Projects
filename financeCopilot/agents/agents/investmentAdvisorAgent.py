@@ -8,7 +8,9 @@ BACKEND_URL = os.getenv("BACKEND_URL")
 
 
 investmentAdvisorAgentRole = f"""
-You are a highly cautious financial advisor specializing. Your primary goal is to protect capital while offering modest, steady growth.
+You are a highly experienced financial advisor from wall street.
+Your primary goal is to understand the user's investment profile and provide them with a personalized investment strategy. 
+You will analyze the provided stock data and recommend 2 to 3 stocks that are suitable for the user.
 
 Your responsibilities:
 1. Analyze the provided stock data and identify 2 to 3 ticker symbols that are suitable for a **super low-risk**, long-term investment strategy.
@@ -16,6 +18,7 @@ Your responsibilities:
 3. Focus on conservative investment principles: prioritize blue-chip stocks, low volatility, and consistent performance over time.
 4. Analyze the user's profile to ensure the recommendations align with their risk tolerance and investment goals.
 5. [Short Reason] = Use current price and historical data to provide a brief explanation of why the stock is a good fit for a risk-averse strategy.
+
 Output format:
 - First, list the recommended stocks with brief explanations.
 - Then, provide a portfolio allocation suggestion using the following structure:
@@ -28,9 +31,45 @@ Portfolio Suggestion:
 Ensure the total adds up to 100% and the recommendations strictly reflect a risk-averse strategy.
 
 # Language:
-•⁠  Use the same language as the user. 
-"""
+• Use the same language as the user.
 
+## Output Schema (JSON)
+{{
+    "recommendations": [
+        {{
+        "ticker": "TICKER1",
+        "short_reason": "Brief explanation for risk-averse suitability"
+        }},
+        {{
+        "ticker": "TICKER2",
+        "short_reason": "Brief explanation for risk-averse suitability"
+        }},
+        {{
+        "ticker": "TICKER3",
+        "short_reason": "Brief explanation for risk-averse suitability"
+        }}
+    ],
+    "portfolio_suggestion": [
+        {{
+        "ticker": "TICKER1",
+        "allocation_pct": 50,
+        "short_reason": "Brief explanation"
+        }},
+        {{
+        "ticker": "TICKER2",
+        "allocation_pct": 30,
+        "short_reason": "Brief explanation"
+        }},
+        {{
+        "ticker": "TICKER3",
+        "allocation_pct": 20,
+        "short_reason": "Brief explanation"
+        }}
+    ]
+}}
+
+while giving exlnations, give spesfic data from the historical data and current price.
+"""
 
 
 
@@ -50,7 +89,7 @@ class InvestmentAdvisorAgent(Agent):
             system_instruction=self.role,
         )
 
-    def get_current_market_prices(file_path: str):
+    def get_current_market_prices(self, file_path: str):
         symbol_to_price = {}
         with open(file_path, "r") as f:
             for line in f:
@@ -65,7 +104,7 @@ class InvestmentAdvisorAgent(Agent):
                         continue 
         return symbol_to_price
     
-    def summarize_stock(symbol_data):
+    def summarize_stock(self, symbol_data):
         closes = [day["close"] for day in reversed(symbol_data["data"])]
         if len(closes) < 2:
             return None
@@ -92,10 +131,9 @@ class InvestmentAdvisorAgent(Agent):
         
     def give_summary_lines(self):
         # Step 1: Get the current market prices
-        current_prices = self.get_current_market_prices("../financeAgent/market_prices_output.txt") #uzantı değişcek
-        
+        current_prices = self.get_current_market_prices("./agents/financeAgent/market_prices_output.txt")
         # Step 2: Load historical data
-        with open("../financeAgent/historical_data.json", "r", encoding="utf-8") as file:
+        with open("./agents/financeAgent/historical_data.json", "r", encoding="utf-8") as file:
             historical_data = json.load(file)
         
         # Step 3: Summarize each stock
@@ -127,10 +165,15 @@ class InvestmentAdvisorAgent(Agent):
         
         return summary_lines
             
-    def get_financal_advise(self, user_message):
-        # Step 1: Get the current market prices
+    async def get_financal_advise(self, user_message):
         summery_lines = self.give_summary_lines()
-        # Step 2: Get user data
-        user_data = self.fetch_user_data()
-        # Step 3: Create the prompt
-        self.model.generate_content(user_message + "User profile: " + json.dumps(user_data) + "Below is a summary of 100 low-risk stock candidates: " +summery_lines)        
+        user_data = await self.fetch_user_data()  # ✅ await
+        prompt = (
+            user_message
+            + "User profile: "
+            + json.dumps(user_data)
+            + "\nBelow is a summary of 100 low-risk stock candidates:\n"
+            + summery_lines
+        )
+        response = self.model.generate_content(prompt)  # bu sync, sorun yok
+        return response.text.strip()

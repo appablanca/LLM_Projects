@@ -89,7 +89,7 @@ def handle_user_input():
                 return jsonify({"success": True, "response": result})
 
             elif agent_key == "investmentadvisoragent":
-                result = asyncio.run(agents[agent_key].get_financal_advise())
+                result = asyncio.run(agents[agent_key].get_financal_advise(user_text))
                 orchestrator.conversation_history.append(
                     {"user_input": user_text, "agent_key": agent_key, "agent_response": result}
                 )
