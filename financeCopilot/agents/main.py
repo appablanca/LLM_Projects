@@ -153,6 +153,31 @@ def handle_budget_analysis():
         }), 500
 
 
+@app.route("/embeddings", methods=["POST"])
+def get_embeddings():
+    try:
+        data = request.get_json()
+        text = data.get("text")
+
+        if not text:
+            return jsonify({"success": False, "message": "Text is required"}), 400
+
+        result = genai.embed_content(
+            model="models/embedding-001",
+            content=text,
+            task_type="retrieval_document"
+        )
+
+        return jsonify({"success": True, "embeddings": result["embedding"]})
+
+    except Exception as e:
+        print(f"Error in get_embeddings: {e}")
+        return jsonify({
+            "success": False,
+            "message": "Internal server error",
+            "error": str(e)
+        }), 500
+    
 if __name__ == "__main__":
     print("Starting Flask server on port 5001...")
     app.run(debug=True, port=5001, host="0.0.0.0")

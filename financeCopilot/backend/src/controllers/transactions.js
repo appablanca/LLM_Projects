@@ -1,5 +1,6 @@
 const { Transaction, CategorySpending } = require('../models/transactions');
 const User = require("../models/users");
+const axios = require("axios");
 
 exports.saveTransactionsAndSpending = async (req, res) => {
   try {
@@ -72,15 +73,37 @@ exports.saveTransactionsAndSpending = async (req, res) => {
     }
 
     // Save new transactions
-    const transactionPromises = newTransactions.map(transaction => {
-      return new Transaction({
-        userId,
-        amount: transaction.amount,
-        date: transaction.date,
-        description: transaction.description,
-        flow: transaction.flow,
-        spendingCategory: transaction.spending_category
-      }).save();
+    const transactionPromises = newTransactions.map(async (transaction) => {
+      try {
+        const response = await axios.post("http://localhost:5001/embeddings", {
+          text: `${transaction.description} | ${transaction.amount} | ${transaction.flow}`
+        });
+
+        const embedding = response.data?.embedding || [];
+
+        return new Transaction({
+          userId,
+          amount: transaction.amount,
+          date: transaction.date,
+          description: transaction.description,
+          flow: transaction.flow,
+          spendingCategory: transaction.spending_category,
+          embeddings: embedding // Save it in MongoDB
+        }).save();
+
+      } catch (err) {
+        console.error("Embedding generation failed for transaction:", transaction.description, err.message);
+        // Save transaction without embedding if it fails
+        return new Transaction({
+          userId,
+          amount: transaction.amount,
+          date: transaction.date,
+          description: transaction.description,
+          flow: transaction.flow,
+          spendingCategory: transaction.spending_category,
+          embeddings: [] // Empty fallback
+        }).save();
+      }
     });
 
     // Save category spending

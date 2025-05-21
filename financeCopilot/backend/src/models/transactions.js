@@ -26,6 +26,10 @@ const transactionSchema = new mongoose.Schema({
   spendingCategory: {
     type: String,
     required: true
+  },
+  embeddings:{
+    type: Object,
+    default: {}
   }
 });
 
