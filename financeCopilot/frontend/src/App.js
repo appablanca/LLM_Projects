@@ -17,6 +17,7 @@ import Sidebar from "./scenes/global/sidebar";
 import Profile from "./scenes/profile/profile";
 import Transactions from "./scenes/transactions/transactions";
 import Budget from "./scenes/budget/budget";
+import Subscription from "./scenes/subscription/subscription";
 
 function AppContent() {
   const [theme, colorMode] = useMode();
@@ -55,6 +56,7 @@ function AppContent() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/transactions" element={<Transactions />} />
         <Route path="/budget" element={<Budget />} />
+        <Route path="/subscription" element={<Subscription />} />
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

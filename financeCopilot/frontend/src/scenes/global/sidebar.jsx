@@ -16,6 +16,7 @@ import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import MenuIcon from "@mui/icons-material/Menu";
+import PaidIcon from '@mui/icons-material/Paid';
 import LogoutIcon from "@mui/icons-material/Logout";
 import { useNavigate, useLocation } from "react-router-dom";
 import { tokens } from "../../theme";
@@ -146,6 +147,8 @@ const Sidebar = () => {
           </ListItemIcon>
           {!isCollapsed && <ListItemText primary="Budget" />}
         </ListItem>
+
+        {/* Invesment Button */}
         <ListItem
           button
           selected={location.pathname === "/investments"}
@@ -157,6 +160,21 @@ const Sidebar = () => {
           </ListItemIcon>
           {!isCollapsed && <ListItemText primary="Investments" />}
         </ListItem>
+
+        {/* Subscription button */}
+        <ListItem
+          button
+          selected={location.pathname === "/subscription"}
+          onClick={() => navigate("/subscription")}
+          sx={{ justifyContent: isCollapsed ? "center" : "flex-start" }}
+        >
+          <ListItemIcon sx={{ color: "white", justifyContent: "center" }}>
+            <PaidIcon />
+          </ListItemIcon>
+          {!isCollapsed && <ListItemText primary="Subscription" />}
+        </ListItem>
+
+        {/* Logout button */}
         <ListItem
           button
           onClick={() => setLogoutDialogOpen(true)}
