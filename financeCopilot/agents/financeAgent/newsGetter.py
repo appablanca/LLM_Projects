@@ -30,6 +30,7 @@ Return a structured JSON with:
 - "opportunities": any favorable developments for investors,
 - "risks": potential negative signals or red flags.
 After creating the JSON add another field called "URL" and populate with the URL of the news article.
+Include top 10 relevant news article URLs in the "URL" field as a list of strings.
 The JSON should be formatted as follows:
 {
   "overview": "...",
@@ -37,7 +38,7 @@ The JSON should be formatted as follows:
   "market_impacts": ["..."],
   "opportunities": ["..."],
   "risks": ["..."],
-  "URL": "..."
+  "URL": ["...", "..."]
 }
 The JSON should be valid and well-structured.
 

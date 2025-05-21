@@ -3,6 +3,7 @@ import os
 import json
 import httpx
 from dotenv import load_dotenv
+import numpy as np  # ensure numpy is imported at the top
 import google.generativeai as genai
 from financeAgent.newsGetter import NewsAnalyzer
 load_dotenv()
@@ -29,7 +30,8 @@ Your responsibilities:
 4. While makeing detailed analysis of each stock, refer to the spesfic news and metrics provided in the summary. 
 5. Don't hold back on the details; provide a comprehensive analysis of each stock.
 6. Construct a simple portfolio allocation that reflects the selected stocks and fits the user's profile.
-
+7. Populate the URLs field with the URLs that come to you.
+8. Give explanations for each ticker.
 Output format:
 Respond ONLY in valid JSON. Do not include any explanations outside the JSON.
 
@@ -47,6 +49,12 @@ Use this structure:
     "TICKER1": "50%",
     "TICKER2": "30%",
     "TICKER3": "20%"
+  }},
+  {{
+    "URLs": [
+        "https://example.com/news1",
+        "https://example.com/news2"
+        ]
   }}
 }}
 
@@ -87,6 +95,13 @@ class InvestmentAdvisorAgent(Agent):
                         continue
         return symbol_to_price
 
+    def calculate_annualized_volatility(self,closes):
+        if len(closes) < 2:
+            return 0.0
+        returns = np.log(np.array(closes[1:]) / np.array(closes[:-1]))
+        daily_volatility = np.std(returns, ddof=1)
+        return round(daily_volatility * np.sqrt(252), 2)
+    
     def summarize_stock(self, symbol_data):
         closes = [day["close"] for day in reversed(symbol_data["data"])]
         if len(closes) < 2:
@@ -97,7 +112,7 @@ class InvestmentAdvisorAgent(Agent):
             "min_close": round(min(closes), 2),
             "max_close": round(max(closes), 2),
             "last_close": round(closes[-1], 2),
-            "volatility": round(max(closes) - min(closes), 2),
+            "volatility": self.calculate_annualized_volatility(closes),
             "growth_pct": round(((closes[-1] - closes[0]) / closes[0]) * 100, 2),
         }
 
@@ -146,6 +161,7 @@ class InvestmentAdvisorAgent(Agent):
                     "market_impacts": [],
                     "opportunities": [],
                     "risks": [],
+                    "URL": []
                 }
 
             s["news_summary"] = news_summary
@@ -156,7 +172,7 @@ Ticker: {symbol}
 - Growth (1y): {s['growth_pct']} %
 - Volatility: {s['volatility']} $
 - Last Close: {s['last_close']} $
-- Today’s Price: {s['today_price']} $
+- Today's Price: {s['today_price']} $
 
 📊 News Summary:
 Overview: {news_summary.get("overview", "N/A")}
@@ -164,6 +180,7 @@ Key Trends: {", ".join(news_summary.get("key_trends", []))}
 Market Impacts: {", ".join(news_summary.get("market_impacts", []))}
 Opportunities: {", ".join(news_summary.get("opportunities", []))}
 Risks: {", ".join(news_summary.get("risks", []))}
+News URL: {", ".join(news_summary.get("URL", []))}
 
 ---------------------------------------------------------
 """
@@ -183,5 +200,4 @@ Risks: {", ".join(news_summary.get("risks", []))}
         )
 
         response = self.generate_response(prompt)
-        print(f"Prompt: {prompt}")
         return json.loads(response)
