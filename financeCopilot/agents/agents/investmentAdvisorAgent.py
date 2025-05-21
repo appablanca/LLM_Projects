@@ -1,80 +1,62 @@
 from agents.baseAgent import Agent
-import os,json,httpx
+import os
+import json
+import httpx
 from dotenv import load_dotenv
 import google.generativeai as genai
-
+from financeAgent.newsGetter import NewsAnalyzer
 load_dotenv()
 BACKEND_URL = os.getenv("BACKEND_URL")
 
-
 investmentAdvisorAgentRole = f"""
-You are a highly experienced financial advisor from wall street.
-Your primary goal is to understand the user's investment profile and provide them with a personalized investment strategy. 
-You will analyze the provided stock data and recommend 2 to 3 stocks that are suitable for the user.
+You are a highly experienced financial advisor from Wall Street.
+Your goal is to provide personalized investment advice based on the user's profile and current market data.
+
+You are provided with:
+- The user's investment profile (e.g., age, income, goals, housing, marital status, investment preferences)
+- Summarized data for 10 stock candidates, including:
+  • Average closing price
+  • Growth percentage over the past year
+  • Volatility
+  • Last close price
+  • Today’s price
+  • News-based insights (overview, trends, opportunities, risks)
 
 Your responsibilities:
-1. Analyze the provided stock data and identify 2 to 3 ticker symbols that are suitable for a **super low-risk**, long-term investment strategy.
-2. Justify each recommendation with a clear explanation based on available metrics (e.g., stability, dividend history, market dominance, or industry resilience).
-3. Focus on conservative investment principles: prioritize blue-chip stocks, low volatility, and consistent performance over time.
-4. Analyze the user's profile to ensure the recommendations align with their risk tolerance and investment goals.
-5. [Short Reason] = Use current price and historical data to provide a brief explanation of why the stock is a good fit for a risk-averse strategy.
+1. Analyze the user's investment profile and align your recommendations with their risk tolerance, financial goals, and investment horizon.
+2. Select 2 to 3 stocks from the list that best match the user's profile.
+3. Justify each selection using specific metrics and news insights (e.g., low volatility, strong growth, relevant opportunities).
+4. While makeing detailed analysis of each stock, refer to the spesfic news and metrics provided in the summary. 
+5. Don't hold back on the details; provide a comprehensive analysis of each stock.
+6. Construct a simple portfolio allocation that reflects the selected stocks and fits the user's profile.
 
 Output format:
-- First, list the recommended stocks with brief explanations.
-- Then, provide a portfolio allocation suggestion using the following structure:
+Respond ONLY in valid JSON. Do not include any explanations outside the JSON.
 
-Portfolio Suggestion:
-- 50% in [TICKER1] - [Short reason]
-- 30% in [TICKER2] - [Short reason]
-- 20% in [TICKER3] - [Short reason]
-
-Ensure the total adds up to 100% and the recommendations strictly reflect a risk-averse strategy.
-
-# Language:
-• Use the same language as the user.
-
-## Output Schema (JSON)
+Use this structure:
 {{
-    "recommendations": [
-        {{
-        "ticker": "TICKER1",
-        "short_reason": "Brief explanation for risk-averse suitability"
-        }},
-        {{
-        "ticker": "TICKER2",
-        "short_reason": "Brief explanation for risk-averse suitability"
-        }},
-        {{
-        "ticker": "TICKER3",
-        "short_reason": "Brief explanation for risk-averse suitability"
-        }}
-    ],
-    "portfolio_suggestion": [
-        {{
-        "ticker": "TICKER1",
-        "allocation_pct": 50,
-        "short_reason": "Brief explanation"
-        }},
-        {{
-        "ticker": "TICKER2",
-        "allocation_pct": 30,
-        "short_reason": "Brief explanation"
-        }},
-        {{
-        "ticker": "TICKER3",
-        "allocation_pct": 20,
-        "short_reason": "Brief explanation"
-        }}
-    ]
+  "recommendations": [
+    {{
+      "ticker": "TICKER1",
+      "detailed_analysis": "detailed analysis of TICKER1 referansing news and metrics",
+      "volatility": 12.3,
+      "growth_pct": 8.5
+    }},
+  ],
+  "portfolio_allocation": {{
+    "TICKER1": "50%",
+    "TICKER2": "30%",
+    "TICKER3": "20%"
+  }}
 }}
 
-while giving exlnations, give spesfic data from the historical data and current price.
+Guidelines:
+- Make sure the total portfolio allocation adds up to 100%.
+- Adapt to the user's language automatically.
+- Justify recommendations with data-driven reasoning.
 """
 
-
-
 class InvestmentAdvisorAgent(Agent):
-    
     def __init__(self, name, role):
         super().__init__(name="Investment Advice Agent", role=investmentAdvisorAgentRole)
         self.model = genai.GenerativeModel(
@@ -88,6 +70,7 @@ class InvestmentAdvisorAgent(Agent):
             },
             system_instruction=self.role,
         )
+        self.news_analyzer = NewsAnalyzer()
 
     def get_current_market_prices(self, file_path: str):
         symbol_to_price = {}
@@ -101,9 +84,9 @@ class InvestmentAdvisorAgent(Agent):
                         price = float(parts[1].replace("$", "").strip())
                         symbol_to_price[symbol] = price
                     except ValueError:
-                        continue 
+                        continue
         return symbol_to_price
-    
+
     def summarize_stock(self, symbol_data):
         closes = [day["close"] for day in reversed(symbol_data["data"])]
         if len(closes) < 2:
@@ -115,9 +98,9 @@ class InvestmentAdvisorAgent(Agent):
             "max_close": round(max(closes), 2),
             "last_close": round(closes[-1], 2),
             "volatility": round(max(closes) - min(closes), 2),
-            "growth_pct": round(((closes[-1] - closes[0]) / closes[0]) * 100, 2)
+            "growth_pct": round(((closes[-1] - closes[0]) / closes[0]) * 100, 2),
         }
-        
+
     async def fetch_user_data(self):
         async with httpx.AsyncClient() as client:
             try:
@@ -126,54 +109,79 @@ class InvestmentAdvisorAgent(Agent):
                 return response.json()
             except httpx.HTTPError as e:
                 print(f"Error fetching user data: {e}")
-                return {}    
-        
-        
+                return {}
+
     def give_summary_lines(self):
         # Step 1: Get the current market prices
         current_prices = self.get_current_market_prices("./agents/financeAgent/market_prices_output.txt")
+
         # Step 2: Load historical data
         with open("./agents/financeAgent/historical_data.json", "r", encoding="utf-8") as file:
             historical_data = json.load(file)
-        
+
         # Step 3: Summarize each stock
         summaries = [self.summarize_stock(item) for item in historical_data]
         summaries = [s for s in summaries if s is not None]
-        
+
         # Step 4: Filter low-risk candidates
-        low_risk_candidates = [
-            s for s in summaries if s["volatility"] < 35 and s["growth_pct"] > 0
-        ]
-        
-        # Step 5: Select top candidates
-        selected = sorted(low_risk_candidates, key=lambda x: x["volatility"])[:100]
-        
-        # Step 6: Add today's price to each candidate
+        low_risk_candidates = [s for s in summaries if s["volatility"] < 35 and s["growth_pct"] > 0]
+
+        # Step 5: Select top 10 by lowest volatility
+        selected = sorted(low_risk_candidates, key=lambda x: x["volatility"])[:10]
+
+        # Step 6: Attach current price and news analysis
+        summary_lines = ""
+
         for s in selected:
-            s["today_price"] = current_prices.get(s["symbol"], "N/A")
-            
-        summary_lines = "\n".join([
-                f"""
-            Ticker: {s['symbol']}
-            - Avg Close: {s['avg_close']} $
-            - Growth (1y): {s['growth_pct']} %
-            - Volatility: {s['volatility']} $
-            - Last Close: {s['last_close']} $
-            - Today’s Price: {s['today_price']} $
-            """ for s in selected
-            ])
-        
+            symbol = s["symbol"]
+            s["today_price"] = current_prices.get(symbol, "N/A")
+
+            try:
+                news_summary = self.news_analyzer.analyze_news(symbol)
+            except Exception as e:
+                print(f"⚠️ News analysis failed for {symbol}: {e}")
+                news_summary = {
+                    "overview": "Unavailable",
+                    "key_trends": [],
+                    "market_impacts": [],
+                    "opportunities": [],
+                    "risks": [],
+                }
+
+            s["news_summary"] = news_summary
+
+            summary_lines += f"""
+Ticker: {symbol}
+- Avg Close: {s['avg_close']} $
+- Growth (1y): {s['growth_pct']} %
+- Volatility: {s['volatility']} $
+- Last Close: {s['last_close']} $
+- Today’s Price: {s['today_price']} $
+
+📊 News Summary:
+Overview: {news_summary.get("overview", "N/A")}
+Key Trends: {", ".join(news_summary.get("key_trends", []))}
+Market Impacts: {", ".join(news_summary.get("market_impacts", []))}
+Opportunities: {", ".join(news_summary.get("opportunities", []))}
+Risks: {", ".join(news_summary.get("risks", []))}
+
+---------------------------------------------------------
+"""
+
         return summary_lines
-            
+
     async def get_financal_advise(self, user_message):
         summery_lines = self.give_summary_lines()
-        user_data = await self.fetch_user_data()  # ✅ await
+        user_data = await self.fetch_user_data()
+
         prompt = (
             user_message
-            + "User profile: "
+            + "\nUser profile: "
             + json.dumps(user_data)
-            + "\nBelow is a summary of 100 low-risk stock candidates:\n"
+            + "\nBelow is a summary of 10 low-risk stock candidates with recent news analysis:\n"
             + summery_lines
         )
-        response = self.model.generate_content(prompt)  # bu sync, sorun yok
-        return response.text.strip()
+
+        response = self.generate_response(prompt)
+        print(f"Prompt: {prompt}")
+        return json.loads(response)
