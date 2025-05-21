@@ -5,6 +5,10 @@ from fastapi import FastAPI
 from dotenv import load_dotenv
 import google.generativeai as genai
 import json
+from langdetect import detect
+
+from dotenv import load_dotenv
+
 
 load_dotenv()
 
@@ -16,6 +20,7 @@ lifePlannerAgentRole = """
 You are a smart financial assistant helping users build a personal life plan.
 
 Your responsibilities:
+• Always respond in the same language the user asked the question.
 •⁠  Always create a *realistic, **step-by-step, and **time-based* financial plan based on the user's goals.
 •⁠  If the user’s goal is not currently possible (e.g., only 100 TRY savings), still create a future plan explaining:
     - How much they need to save
@@ -36,6 +41,17 @@ What to do:
 •⁠  Review user profile and the topic.
 •⁠  If the topic is financially relevant, generate a detailed life plan for that specific goal.
 •⁠  If not financially relevant, reply normally but still return JSON.
+•⁠ In the plans, provide a **percentage spending distribution** based on the user's income (for example: 30% rent, 20% savings, 10% transportation, etc.).
+• Always respond in the same language the user asked the question.
+
+
+•⁠ Consider the user's current spending habits when recommending this distribution.
+
+•⁠ If the user is saving very little, explain what and how they can reduce it with percentage targets.
+
+•⁠ Provide an explanation of this distribution in the Recommendations section:
+- “You should spend 30% of your income on rent, currently it is 45%. Alternatively, living in neighborhood X will lower the rent rate.”
+- “15% savings is recommended. You are currently saving 5%. If you save Y TL more per month, you will reach your goal in Z years.”
 
 NEVER:
 •⁠  Never reject a plan outright just because current savings are low.
@@ -116,43 +132,111 @@ class LifePlannerAgent(Agent):
             profile[key] = value
         return profile        
 
+    from langdetect import detect
+
     async def get_life_plan(self, user_message):
+        user_language = detect(user_message)
         try:
             user_data = await self.fetch_user_data()
             macro_data = await self.fetch_macro_data()
             parsed_profile = await self.parse_user_fields(user_data)
 
-            formatted_profile = f"""
-            Kullanıcı profili:
-            - Yaş: {parsed_profile.get("age")}
-            - Şehir: {parsed_profile.get("city")}
-            - Gelir: {parsed_profile.get("income")} TL/ay
-            - Kira: {parsed_profile.get("rent")} TL/ay
-            - Birikim: {parsed_profile.get("savings")} TL
-            - Medeni Durum: {parsed_profile.get("marital_status")}
-            - Çocuk: {parsed_profile.get("children")}
-            - Risk Toleransı: {parsed_profile.get("risk_tolerance")}
-            """
+        
 
+        # 🔁 Makro verileri ayrı ayrı çek
             inflation = macro_data.get("inflationRate", "Bilinmiyor")
             usd_to_try = macro_data.get("usdToTry", "Bilinmiyor")
             car_price_index = macro_data.get("carPriceIndex", "Bilinmiyor")
             housing_price_index = macro_data.get("housingPriceIndex", "Bilinmiyor")
 
+        # Profil ve makro verileri dize olarak hazırla
+            
+            profile_template = f"""
+User Profile:
+- Name: {parsed_profile.get("name", "")} {parsed_profile.get("surname", "")}
+- Age: {parsed_profile.get("age")}
+- Occupation: {parsed_profile.get("occupation")}
+- City: {parsed_profile.get("city")}
+- Income: {parsed_profile.get("income")} TRY/month
+- Savings: {parsed_profile.get("savings")} TRY
+- Housing: {parsed_profile.get("housing")}
+- Rent: {parsed_profile.get("rent")}
+- Marital Status: {parsed_profile.get("marital_status")}
+- Children: {parsed_profile.get("children")}
+- Financial Goals: {parsed_profile.get("financial_goals")}
+- Investment Horizon: {parsed_profile.get("investment_horizon")}
+- Investment Expectation: {parsed_profile.get("investment_expectation")}
+- Income Use: {parsed_profile.get("income_use")}
+- Loss Reaction: {parsed_profile.get("loss_reaction")}
+- Retirement Plan: {parsed_profile.get("retirement_plan")}
+- Risk Tolerance: {parsed_profile.get("risk_tolerance")}
+- Investment Term: {parsed_profile.get("investment_term")}
+"""
+
+
             macro_info = f"""
-            Güncel ekonomik göstergeler:
-            - Enflasyon oranı: {inflation}%
-            - USD/TRY kuru: {usd_to_try}
-            - Araç fiyat endeksi: {car_price_index}
-            - Konut fiyat endeksi: {housing_price_index}
-            """
+                Current Economic Indicators:
+                - Inflation Rate: {inflation}%
+                - USD/TRY Exchange Rate: {usd_to_try}
+                - Car Price Index: {car_price_index}    
+                - Housing Price Index: {housing_price_index}
+                """
+
+            instruction = f"""The user's message is in **{user_language.upper()}**.
+            Respond in the same language the user asked the question.Please use the profile and macroeconomic data below to generate a realistic, step-by-step, time-based financial life plan."""
+
+        
 
             prompt = f"""
             {user_message}
-            Lütfen aşağıdaki kullanıcı profilini ve ekonomik göstergeleri kullanarak detaylı, zamana yayılmış, gerçekçi bir hayat planı oluştur.
-            {formatted_profile}
+            {instruction}
+            {profile_template}
             {macro_info}
             """
+            # Prompt'a özel yüzdesel dağılım isteği ekle
+            
+            prompt += """
+    Your response must be in the following JSON format and respond in the same language the user asked the question:
+
+    {{
+      "askingQuestion": false,
+      "lifePlan": {{
+        "goal": "string – Clearly state the user's objective (e.g., Buy a used C-segment car in 2 years)",
+        "estimatedCost": "string – Estimate current cost in TRY (e.g., 900,000 – 1,100,000 TRY)",
+        "timeline": "string – A realistic time-based path to achieve the goal (e.g., 'Start saving now, reach target by Q2 2026')",
+        "monthlyPlan": "string – A clear, step-by-step financial plan including monthly or quarterly savings, spending adjustments, and key decisions",
+        "generalSummeryOfPlan": "string – High-level summary of the approach and what the user will achieve by following it",
+        "recommendations": ["string", "string", "..."]  // At least 5 detailed, realistic suggestions
+      }}
+    }}
+
+    Important Instructions:
+    - Do NOT leave fields like 'goal', 'estimatedCost', 'timeline', or 'monthlyPlan' vague or generic.
+    - Each field must be detailed, specific, and consistent with the user's income and macroeconomic data.
+    - Use a realistic tone. Avoid generic phrases like “This plan helps you improve your finances.”
+
+    Example output:
+
+    {{
+      "askingQuestion": false,
+      "lifePlan": {{
+        "goal": "Buy a 2nd-hand C-segment car within 2 years",
+        "estimatedCost": "1,000,000 – 1,200,000 TRY",
+        "timeline": "24 months – save 30,000 TRY per month, adjust expenses, purchase in Q2 2026",
+        "monthlyPlan": "Months 1–3: Reduce rent by moving to a cheaper area, saving 2,000 TRY/month. Months 4–12: Save 30,000 TRY/month while minimizing entertainment and transport costs. Month 13–24: Maintain same savings rate. At the end of 24 months, you will have approx. 1,000,000 TRY.",
+        "generalSummeryOfPlan": "This plan focuses on disciplined savings and optimizing your current expenses to help you buy a mid-range car within 2 years.",
+        "recommendations": [
+          "Current rent is 7.69% of income (5,000 TRY). If needed, increase to 30% (up to 19,500 TRY) to improve living conditions.",
+          "Savings target is 30,000 TRY/month. You are currently saving 20,000 TRY. Reduce transport and entertainment expenses to meet this target.",
+          "Transportation: Switch from taxi to metro/bus to save up to 3,000 TRY/month.",
+          "Consider buying models like Toyota Corolla (2021+), Renault Megane, or Fiat Egea with low mileage.",
+          "Track spending weekly using a budgeting app to stay disciplined and adjust based on monthly surplus."
+        ]
+      }}
+    }}
+    """
+            
+
 
             print(f"📎 Prompt sent to model:\n{prompt}")
 
