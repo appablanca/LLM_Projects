@@ -3,6 +3,7 @@ import pdfplumber
 import tempfile
 from agents.baseAgent import Agent
 import google.generativeai as genai
+
 spendingCategories = [
     "food_drinks", "clothing_cosmetics", "subscription", "groceries",
     "transportation", "entertainment", "stationery_books", "technology",
@@ -119,6 +120,7 @@ Example Target JSON Structure:
 """
 
 class ExpenseAnalyzerAgent(Agent):
+    
     def __init__(self,name,role):
         #super().__init__(name="Budget Planner Agent", role=expenseAnalyzerRole)
         super().__init__(name=name, role=role)
