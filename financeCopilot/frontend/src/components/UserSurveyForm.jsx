@@ -21,6 +21,7 @@ const validationSchema = yup.object({
     .number()
     .required("Required")
     .min(18, "Yoou must be at least 18 years old"),
+  occupation: yup.string().required("Required"),
   income: yup.number().required("Required"),
   city: yup.string().required("Required"),
   housing: yup.string().required("Required"),
@@ -53,7 +54,7 @@ const UserSurveyForm = () => {
   const formik = useFormik({
     initialValues: {
       age: "",
-      occuption: "",
+      occupation: "",
       income: "",
       city: "",
       housing: "",
@@ -68,7 +69,7 @@ const UserSurveyForm = () => {
     onSubmit: (values) => {
       const surveyData = [
         { name: "Age", content: String(values.age) },
-        { name: "Occupation", content: String(values.occuption) },
+        { name: "Occupation", content: String(values.occupation) },
         { name: "Income", content: String(values.income) },
         { name: "Savings", content: String(values.savings) }, // Yeni alan
         { name: "City", content: String(values.city) },
@@ -151,7 +152,7 @@ const UserSurveyForm = () => {
         if (Array.isArray(response)) {
           const formValues = {
             age: "",
-            occuption: "",
+            occupation: "",
             income: "",
             city: "",
             housing: "",
@@ -169,7 +170,7 @@ const UserSurveyForm = () => {
                 formValues.age = item.content;
                 break;
               case "Occupation":
-                formValues.occuption = item.content;
+                formValues.occupation = item.content;
                 break;
               case "Income":
                 formValues.income = item.content;
@@ -278,10 +279,10 @@ const UserSurveyForm = () => {
         name="occupation"
         label="Occupation"
         placeholder="e.g. Software Engineer"
-        value={formik.values.occuption}
+        value={formik.values.occupation}
         onChange={formik.handleChange}
-        error={formik.touched.occuption && Boolean(formik.errors.occuption)}
-        helperText={formik.touched.occuption && formik.errors.occuption}
+        error={formik.touched.occupation && Boolean(formik.errors.occupation)}
+        helperText={formik.touched.occupation && formik.errors.occupation}
         disabled={!isEditing}
       />
       <TextField
