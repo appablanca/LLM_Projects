@@ -260,3 +260,43 @@ async function saveStocks(stocks) {
 export function saveUserStocks(stocks) {
   return saveStocks(stocks);
 }
+
+async function getStocks() {
+  try {
+    const response = await axiosInstance.get(`/stocks/getStocks`);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error fetching stocks:",
+      error.response ? error.response.data : error.message
+    );
+    throw new Error(
+      "Failed to fetch stocks: " +
+        (error.response ? error.response.data : error.message)
+    );
+  }
+}
+export function getUserStocks() {
+  return getStocks();
+}
+
+async function removeStock(symbol) {
+  try {
+    const response = await axiosInstance.post(`/stocks/removeStock`, {
+      symbol: symbol,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error removing stock:",
+      error.response ? error.response.data : error.message
+    );
+    throw new Error(
+      "Failed to remove stock: " +
+        (error.response ? error.response.data : error.message)
+    );
+  }
+}
+export function removeUserStock(symbol) {
+  return removeStock(symbol);
+}

@@ -18,6 +18,7 @@ import Profile from "./scenes/profile/profile";
 import Transactions from "./scenes/transactions/transactions";
 import Budget from "./scenes/budget/budget";
 import Subscription from "./scenes/subscription/subscription";
+import Invesment from "./scenes/invesment/invesment";
 
 function AppContent() {
   const [theme, colorMode] = useMode();
@@ -57,7 +58,7 @@ function AppContent() {
         <Route path="/transactions" element={<Transactions />} />
         <Route path="/budget" element={<Budget />} />
         <Route path="/subscription" element={<Subscription />} />
-
+        <Route path="/investments" element={<Invesment />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     );
@@ -68,15 +69,16 @@ function AppContent() {
       <ToastContainer />
       <ThemeProvider theme={theme}>
         <CssBaseline />
+        <ConnectionStatus />
         <div className="app" style={{ display: "flex", minHeight: "100vh" }}>
           {isAuthenticated && <Sidebar />}
           <div style={{ flex: 1 }}>
             {loading ? (
               <LoadingAnimation />
             ) : !isAuthenticated ? (
-              <LoginRoutes/>
+              <LoginRoutes />
             ) : (
-             <AppRoutes/>
+              <AppRoutes />
             )}
           </div>
         </div>

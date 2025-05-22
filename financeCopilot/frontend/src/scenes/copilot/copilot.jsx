@@ -113,7 +113,7 @@ const Copilot = () => {
         botMsg = "No response received.";
       }
 
-      setMessages((prev) => [...prev, userMsg, { sender: "ai", text: botMsg }]);
+      setMessages((prev) => [...prev,{ sender: "ai", text: botMsg }]);
     } catch (error) {
       console.error("Error in handleSendMessage:", error); // Debug log
       setMessages((prev) => [...prev, userMsg, { sender: "ai", text: "An error occurred. Please try again." }]);
