@@ -50,6 +50,7 @@ def handle_user_input():
     try:
         user_text = request.form.get("message")
         uploaded_file = request.files.get("file")
+        user = request.form.get("user")
 
         if not user_text and not uploaded_file:
             return jsonify({"success": False, "message": "Message or file is required"}), 400
@@ -82,14 +83,14 @@ def handle_user_input():
                     }), 400
 
             elif agent_key == "lifeplanneragent":
-                result = asyncio.run(agents[agent_key].get_life_plan(user_text))
+                result = asyncio.run(agents[agent_key].get_life_plan(user_text, user))
                 orchestrator.conversation_history.append(
                     {"user_input": user_text, "agent_key": agent_key, "agent_response": result}
                 )
                 return jsonify({"success": True, "response": result})
 
             elif agent_key == "investmentadvisoragent":
-                result = asyncio.run(agents[agent_key].get_financal_advise(user_text))
+                result = asyncio.run(agents[agent_key].get_financal_advise(user_text,user))
                 orchestrator.conversation_history.append(
                     {"user_input": user_text, "agent_key": agent_key, "agent_response": result}
                 )

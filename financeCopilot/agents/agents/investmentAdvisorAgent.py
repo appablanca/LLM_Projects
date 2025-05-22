@@ -187,9 +187,9 @@ News URL: {", ".join(news_summary.get("URL", []))}
 
         return summary_lines
 
-    async def get_financal_advise(self, user_message):
+    async def get_financal_advise(self, user_message,user):
         summery_lines = self.give_summary_lines()
-        user_data = await self.fetch_user_data()
+        user_data = await self.fetch_user_data(user.id)
 
         prompt = (
             user_message

@@ -99,10 +99,10 @@ class LifePlannerAgent(Agent):
             system_instruction=self.role,
         )
 
-    async def fetch_user_data(self):
+    async def fetch_user_data(self,userId):
         async with httpx.AsyncClient() as client:
             try:
-                response = await client.get(f"{BACKEND_URL}/userPanel/getFields?userId=6818ee0c6507de8196c00a55")
+                response = await client.get(f"{BACKEND_URL}/userPanel/getFields?userId={userId}")
                 response.raise_for_status()
                 return response.json()
             except httpx.HTTPError as e:
@@ -132,12 +132,11 @@ class LifePlannerAgent(Agent):
             profile[key] = value
         return profile        
 
-    from langdetect import detect
 
-    async def get_life_plan(self, user_message):
+    async def get_life_plan(self, user_message,user):
         user_language = detect(user_message)
         try:
-            user_data = await self.fetch_user_data()
+            user_data = await self.fetch_user_data(user.id)
             macro_data = await self.fetch_macro_data()
             parsed_profile = await self.parse_user_fields(user_data)
 
