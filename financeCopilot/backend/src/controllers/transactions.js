@@ -78,8 +78,9 @@ exports.saveTransactionsAndSpending = async (req, res) => {
         const response = await axios.post("http://localhost:5001/embeddings", {
           text: `${transaction.description} | ${transaction.amount} | ${transaction.flow}`
         });
+        console.log(response)
 
-        const embedding = response.data?.embedding || [];
+        const embedding = response.data?.embeddings || [];
 
         return new Transaction({
           userId,
