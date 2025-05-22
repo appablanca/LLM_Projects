@@ -1,41 +1,34 @@
-# Google Gemini için gerekli paket
+# Google Gemini
 google-generativeai>=0.4.0
 
-# JSON işleme ve veri temizliği
-orjson>=3.9.7
-
-# Ortam değişkenlerini yönetmek için
+# Ortam değişkenleri
 python-dotenv>=1.0.1
 
-# JSON verisini güzel yazdırmak için (isteğe bağlı)
+# PDF oluşturma ve grafik
+fpdf==1.7.2
+matplotlib>=3.7.1
+
+# JSON işleme ve debugging (opsiyonel)
+orjson>=3.9.7
 rich>=13.7.0
 
 # OCR ve Görüntü İşleme
 pillow
 pytesseract
 
-# PDF İşleme
+# PDF & OCR
+pdfplumber
 PyMuPDF
 
-# Ortak kullanım için
+# Web istekleri
 requests
-
-# Testler için
-gradio
-
-# PDF'den metin çıkarmak için
-pdfplumber
-
-# Backend iletişim için
-fastapi
+httpx
 flask
+fastapi
 flask_cors
 
-# Asenkron HTTP istemcisi
-httpx
-
+# Dil algılama
 langdetect
 
-
-
-
+# Test/arayüz
+gradio
