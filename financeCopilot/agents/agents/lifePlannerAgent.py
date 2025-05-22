@@ -132,16 +132,15 @@ class LifePlannerAgent(Agent):
             profile[key] = value
         return profile        
 
-
     async def get_life_plan(self, user_message,user):
         user_language = detect(user_message)
         try:
-            user_data = await self.fetch_user_data(user.id)
+            sessionUser= json.loads(user)
+            user_data = await self.fetch_user_data(sessionUser["id"])
             macro_data = await self.fetch_macro_data()
             parsed_profile = await self.parse_user_fields(user_data)
 
         
-
         # 🔁 Makro verileri ayrı ayrı çek
             inflation = macro_data.get("inflationRate", "Bilinmiyor")
             usd_to_try = macro_data.get("usdToTry", "Bilinmiyor")

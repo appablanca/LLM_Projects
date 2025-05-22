@@ -240,3 +240,23 @@ export function getBudget() {
   return getBudgetPlan();
 }
 
+async function saveStocks(stocks) {
+  try {
+    const response = await axiosInstance.post(`/stocks/saveStocks`, {
+      stocks: stocks,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error saving stocks:",
+      error.response ? error.response.data : error.message
+    );
+    throw new Error(
+      "Failed to save stocks: " +
+        (error.response ? error.response.data : error.message)
+    );
+  }
+}
+export function saveUserStocks(stocks) {
+  return saveStocks(stocks);
+}

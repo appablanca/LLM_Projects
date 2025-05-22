@@ -9,6 +9,7 @@ import {
   CircularProgress,
   Tooltip,
   useTheme,
+  Dialog,
 } from "@mui/material";
 import {
   SmartToy,
@@ -21,7 +22,7 @@ import {
 
 import { toast } from "react-toastify";
 
-import { sendCopilotMessage, saveTransactions } from "../../util/api";
+import { sendCopilotMessage, saveTransactions, saveUserStocks } from "../../util/api";
 import { tokens } from "../../theme";
 
 const Copilot = () => {
@@ -29,6 +30,8 @@ const Copilot = () => {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [showTrackDialog, setShowTrackDialog] = useState(false);
+  const [suggestedStocks, setSuggestedStocks] = useState([]);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -36,7 +39,6 @@ const Copilot = () => {
   const colors = tokens(theme.palette.mode);
 
   useEffect(() => {
-    // Add initial welcome message
     setMessages([
       {
         sender: "ai",
@@ -64,6 +66,14 @@ const Copilot = () => {
 
       let botMsg;
       if (response?.success && response?.response) {
+        // Handle stock suggestions
+        if (
+          response.response.stock_suggestions &&
+          Array.isArray(response.response.stock_suggestions)
+        ) {
+          setSuggestedStocks(response.response.stock_suggestions);
+          setShowTrackDialog(true);
+        }
         // Check if the response contains transaction data
         if (
           response.response.transactions &&
@@ -307,6 +317,34 @@ const Copilot = () => {
           </Box>
         </Box>
       </Box>
+      <Dialog open={showTrackDialog} onClose={() => setShowTrackDialog(false)}>
+        <Box sx={{ p: 3 }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            Do you want to track the following stocks?
+          </Typography>
+          <Typography sx={{ mb: 2 }}>{suggestedStocks.join(", ")}</Typography>
+          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
+            <Button onClick={() => setShowTrackDialog(false)}>Cancel</Button>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={async () => {
+                try {
+                  await saveUserStocks(suggestedStocks);
+                  toast.success("Selected stocks are now being tracked!");
+                } catch (error) {
+                  console.error("Error saving stock suggestions:", error);
+                  toast.error("Failed to save stock suggestions.");
+                } finally {
+                  setShowTrackDialog(false);
+                }
+              }}
+            >
+              Yes, Track
+            </Button>
+          </Box>
+        </Box>
+      </Dialog>
     </Box>
   );
 };
