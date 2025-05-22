@@ -46,6 +46,26 @@ const stockInfoSchema = new Schema({
     type: Number, // 0 for stock, 1 for crypto
     required: true,
   },
+  volatility: {
+    type: Number,
+    default: 0,
+  },
+  growth_pct: {
+    type: Number,
+    default: 0,
+  },
+  avg_close: {
+    type: Number,
+    default: 0,
+  },
+  min_close: {
+    type: Number,
+    default: 0,
+  },
+  max_close: {
+    type: Number,
+    default: 0,
+  },
   deleted: {
     type: Number,
     default: 0,

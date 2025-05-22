@@ -176,3 +176,76 @@ exports.fetchStockDataFromAPI = async (req, res) => {
     return res.status(500).json({ message: "Failed to fetch stock data" });
   }
 };
+//function to calculate volatility
+const calculateVolatility = (data) => {
+  if (!data || data.length < 2) return 0.0;
+  const closes = data.map(entry => entry.close);
+  const returns = closes.slice(1).map((close, i) => Math.log(close / closes[i]));
+  const mean = returns.reduce((acc, val) => acc + val, 0) / returns.length;
+  const variance = returns.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / (returns.length - 1);
+  return Math.round(Math.sqrt(variance) * Math.sqrt(52) * 100) / 100;
+};
+
+//function to calculate growth
+const calculateGrowth = (data) => {
+  if (!data || data.length < 2) return 0.0;
+  const firstClose = data[0].close;
+  const lastClose = data[data.length - 1].close;
+  const growth = ((lastClose - firstClose) / firstClose) * 100;
+  return Math.round(growth * 100) / 100;
+};
+
+exports.createExtraMetadata = async (req, res) => {
+  // Get all stocks 
+  const stocks = await Stock.find({ deleted: 0, type: 0 }).lean();
+  if (!stocks || stocks.length === 0) {
+    return res.status(404).json({ message: "No stocks found" });
+  }
+  // Loop through each stock
+  for (const stock of stocks) {
+    const { symbol, data } = stock;
+    if (!data || data.length === 0) {
+      continue; // Skip if no data
+    }
+    // Calculate volatility and growth
+    const volatility = calculateVolatility(data);
+    const growth = calculateGrowth(data);
+
+    // Calculate closes statistics
+    const closes = data.map(entry => entry.close);
+    const avg_close = Math.round((closes.reduce((a, b) => a + b, 0) / closes.length) * 100) / 100;
+    const min_close = Math.round(Math.min(...closes) * 100) / 100;
+    const max_close = Math.round(Math.max(...closes) * 100) / 100;
+
+    // Update the stock document
+    await Stock.updateOne(
+      { symbol },
+      { $set: { 
+          volatility, 
+          growth_pct: growth,
+          avg_close,
+          min_close,
+          max_close
+        } 
+      }
+    );
+  }
+  return res.status(200).json({ message: "Volatility, growth, and close stats updated successfully" });
+};
+
+exports.getAllStocks = async (req, res) => {
+  try {
+    const stocks = await Stock.find({ deleted: 0, type: 0 })
+      .select('-data') // Exclude the 'data' field
+      .lean();
+
+    if (!stocks || stocks.length === 0) {
+      return res.status(404).json({ message: "No stocks found" });
+    }
+
+    return res.status(200).json(stocks);
+  } catch (err) {
+    console.error("Error fetching all stocks:", err);
+    return res.status(500).json({ message: "Failed to fetch stocks" });
+  }
+};

@@ -62,6 +62,8 @@ Guidelines:
 - Make sure the total portfolio allocation adds up to 100%.
 - Adapt to the user's language automatically.
 - Justify recommendations with data-driven reasoning.
+- Max URL count: 5.
+- DONT ever miss recommendations about the stocks.
 """
 
 class InvestmentAdvisorAgent(Agent):
@@ -116,30 +118,21 @@ class InvestmentAdvisorAgent(Agent):
             "growth_pct": round(((closes[-1] - closes[0]) / closes[0]) * 100, 2),
         }
 
-    async def fetch_user_data(self):
-        async with httpx.AsyncClient() as client:
-            try:
-                response = await client.get(f"{BACKEND_URL}/userPanel/getFields?userId=6818ee0c6507de8196c00a55")
-                response.raise_for_status()
-                return response.json()
-            except httpx.HTTPError as e:
-                print(f"Error fetching user data: {e}")
-                return {}
-
     def give_summary_lines(self):
         # Step 1: Get the current market prices
         current_prices = self.get_current_market_prices("./agents/financeAgent/market_prices_output.txt")
 
         # Step 2: Load historical data
         with open("./agents/financeAgent/historical_data.json", "r", encoding="utf-8") as file:
-            historical_data = json.load(file)
+            stock_data = json.load(file)
 
         # Step 3: Summarize each stock
-        summaries = [self.summarize_stock(item) for item in historical_data]
-        summaries = [s for s in summaries if s is not None]
+        low_risk_candidates= []
+        for s in stock_data:
+            if(s["volatility"] < 35 and s["growth_pct"] > 0):
+                low_risk_candidates.append(s)
 
-        # Step 4: Filter low-risk candidates
-        low_risk_candidates = [s for s in summaries if s["volatility"] < 35 and s["growth_pct"] > 0]
+
 
         # Step 5: Select top 10 by lowest volatility
         selected = sorted(low_risk_candidates, key=lambda x: x["volatility"])[:10]
@@ -171,7 +164,6 @@ Ticker: {symbol}
 - Avg Close: {s['avg_close']} $
 - Growth (1y): {s['growth_pct']} %
 - Volatility: {s['volatility']} $
-- Last Close: {s['last_close']} $
 - Today's Price: {s['today_price']} $
 
 📊 News Summary:
@@ -188,16 +180,17 @@ News URL: {", ".join(news_summary.get("URL", []))}
         return summary_lines
 
     async def get_financal_advise(self, user_message,user):
+        userS = json.loads(user)
         summery_lines = self.give_summary_lines()
-        user_data = await self.fetch_user_data(user.id)
-
+        print(user)
         prompt = (
             user_message
             + "\nUser profile: "
-            + json.dumps(user_data)
+            + json.dumps(userS)
             + "\nBelow is a summary of 10 low-risk stock candidates with recent news analysis:\n"
             + summery_lines
         )
 
+        print(prompt)
         response = self.generate_response(prompt)
         return json.loads(response)

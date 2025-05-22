@@ -57,4 +57,7 @@ router.get("/fetchAllStocksFromFile", generatorController.fetchAllStocksFromFile
  */
 router.post("/getStockData", generatorController.getStockData);
 
+router.get("/createExtraMetadata", generatorController.createExtraMetadata);
+
+router.get("/getAllStocks", generatorController.getAllStocks);
 module.exports = router;

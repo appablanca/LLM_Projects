@@ -1,31 +1,23 @@
 import requests
 import json
 
-def read_symbols(file_path):
-    with open(file_path, 'r') as file:
-        return [line.strip() for line in file if line.strip()]
+def fetch_all_stock_data():
+    url = "http://localhost:8080/generator/getAllStocks"
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print(f"❌ Failed with status code: {response.status_code}")
+            return []
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Request failed: {e}")
+        return []
 
-def fetch_all_stock_data(symbols):
-    url = "http://localhost:8080/generator/getStockData"
-    historical_data = []
-    missing_symbols = []
+if __name__ == "__main__":
+    stock_data = fetch_all_stock_data()
 
-    for symbol in symbols:
-        try:
-            response = requests.post(url, json={"symbol": symbol})
-            if response.status_code == 200:
-                data = response.json()
-                historical_data.append(data)
-            else:
-                missing_symbols.append(symbol)
-        except requests.exceptions.RequestException:
-            missing_symbols.append(symbol)
+    with open("historical_data.json", "w") as f:
+        json.dump(stock_data, f, indent=2)
 
-    return historical_data, missing_symbols
-
-IP = ["IP"]
-historicalData, missingSymbols = fetch_all_stock_data(IP)
-
-# Save the data to a JSON file named historical_data
-with open("historical_data1.json", "w") as f:
-    json.dump(historicalData, f, indent=2)
+    print(f"✅ Saved {len(stock_data)} stocks to historical_data.json")
