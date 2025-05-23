@@ -32,3 +32,5 @@ langdetect
 
 # Test/arayüz
 gradio
+
+finnhub-python

@@ -10,60 +10,72 @@ load_dotenv()
 BACKEND_URL = os.getenv("BACKEND_URL")
 
 investmentAdvisorAgentRole = f"""
-You are a highly experienced financial advisor from Wall Street.
-Your goal is to provide personalized investment advice based on the user's profile and current market data.
+You are a highly experienced financial advisor from Wall Street. Your task is to provide personalized, data-backed investment advice using the user's profile and the provided stock data.
 
-You are provided with:
-- The user's investment profile (e.g., age, income, goals, housing, marital status, investment preferences)
-- Summarized data for 10 stock candidates, including:
+### Input:
+You are given:
+- The user's investment profile, including:
+  • Age
+  • Income
+  • Financial goals
+  • Housing status
+  • Marital status
+  • Risk tolerance
+  • Investment horizon
+- Summarized information for 10 stock candidates, including:
   • Average closing price
   • Growth percentage over the past year
   • Volatility
   • Last close price
-  • Today’s price
+  • Today's market price
   • News-based insights (overview, trends, opportunities, risks)
 
-Your responsibilities:
-1. Analyze the user's investment profile and align your recommendations with their risk tolerance, financial goals, and investment horizon.
-2. Select 2 to 3 stocks from the list that best match the user's profile.
-3. Justify each selection using specific metrics and news insights (e.g., low volatility, strong growth, relevant opportunities).
-4. While makeing detailed analysis of each stock, refer to the spesfic news and metrics provided in the summary. 
-5. Don't hold back on the details; provide a comprehensive analysis of each stock.
-6. Construct a simple portfolio allocation that reflects the selected stocks and fits the user's profile.
-7. Populate the URLs field with the URLs that come to you.
-8. Give explanations for each ticker.
-Output format:
-Respond ONLY in valid JSON. Do not include any explanations outside the JSON.
+### Your Task:
+Analyze the data and complete the following:
 
-Use this structure:
+1. Identify **2 to 3 stock tickers** that align best with the user's risk tolerance, financial goals, and investment horizon.
+2. For each selected stock:
+   - Provide a **detailed analysis** using the specific news and metrics provided.
+   - Reference concrete indicators such as volatility, growth rate, and current price.
+   - Include explanations that justify the recommendation.
+3. Construct a **simple portfolio allocation** using the current market prices to calculate monetary distribution.
+4. List **up to 5 URLs** that were part of your analysis (from the data provided).
+5. Automatically adapt your explanations to the user's language preferences if specified.
+
+### Output Rules:
+- Respond **ONLY** in **valid JSON** format. Do **not** include any text outside the JSON.
+- Do **not** omit stock recommendations under any condition.
+- Ensure total portfolio allocation equals 100%.
+- Use the current market price field in all monetary calculations.
+- While referancing or using current market prices always use the one you are provided with.
+### Output Format:
 {{
   "recommendations": [
     {{
       "ticker": "TICKER1",
-      "detailed_analysis": "detailed analysis of TICKER1 referansing news and metrics",
+      "detailed_analysis": "Detailed analysis of TICKER1 referencing news and metrics.",
       "volatility": 12.3,
-      "growth_pct": 8.5
+      "growth_pct": 8.5,
+      "price": 150.0 $
     }},
+    {{
+      "ticker": "TICKER2",
+      "detailed_analysis": "Detailed analysis of TICKER2 referencing news and metrics.",
+      "volatility": 10.1,
+      "growth_pct": 5.2,
+      "price": 120.0 $
+    }}
   ],
   "portfolio_allocation": {{
-    "TICKER1": "50%",
-    "TICKER2": "30%",
-    "TICKER3": "20%"
+    "TICKER1": "50% ",
+    "TICKER2": "30% ",
+    "TICKER3": "20% "
   }},
-  {{
-    "URLs": [
-        "https://example.com/news1",
-        "https://example.com/news2"
-        ]
-  }}
+  "URLs": [
+    "https://example.com/news1",
+    "https://example.com/news2"
+  ]
 }}
-
-Guidelines:
-- Make sure the total portfolio allocation adds up to 100%.
-- Adapt to the user's language automatically.
-- Justify recommendations with data-driven reasoning.
-- Max URL count: 5.
-- DONT ever miss recommendations about the stocks.
 """
 
 class InvestmentAdvisorAgent(Agent):
@@ -104,20 +116,7 @@ class InvestmentAdvisorAgent(Agent):
         daily_volatility = np.std(returns, ddof=1)
         return round(daily_volatility * np.sqrt(252), 2)
     
-    def summarize_stock(self, symbol_data):
-        closes = [day["close"] for day in reversed(symbol_data["data"])]
-        if len(closes) < 2:
-            return None
-        return {
-            "symbol": symbol_data["symbol"],
-            "avg_close": round(sum(closes) / len(closes), 2),
-            "min_close": round(min(closes), 2),
-            "max_close": round(max(closes), 2),
-            "last_close": round(closes[-1], 2),
-            "volatility": self.calculate_annualized_volatility(closes),
-            "growth_pct": round(((closes[-1] - closes[0]) / closes[0]) * 100, 2),
-        }
-
+    
     def give_summary_lines(self):
         # Step 1: Get the current market prices
         current_prices = self.get_current_market_prices("./agents/financeAgent/market_prices_output.txt")
@@ -135,7 +134,7 @@ class InvestmentAdvisorAgent(Agent):
 
 
         # Step 5: Select top 10 by lowest volatility
-        selected = sorted(low_risk_candidates, key=lambda x: x["volatility"])[:10]
+        selected = sorted(low_risk_candidates, key=lambda x: x["volatility"])[:5]
 
         # Step 6: Attach current price and news analysis
         summary_lines = ""
