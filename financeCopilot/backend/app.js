@@ -49,7 +49,7 @@ const userPanelRoute = require("./src/routes/userPanel.js");
 const generatorRoute = require("./src/routes/generator.js");
 const copilotRoute = require("./src/routes/copilot.js");
 const transactionsRoute = require("./src/routes/transactions.js")
-
+const startWebSocketClient  = require('./src/services/stockSocket.js').startWebSocketClient; // Import WebSocket client
 app.use(bodyParser.urlencoded({ extended: false }));
 
 const corsOptions = {
@@ -86,6 +86,7 @@ app.use("/login", loginRoute);
 app.use("/copilot", copilotRoute);
 app.use('/transactions', transactionsRoute); 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+startWebSocketClient(); // ✅ Start WebSocket client on server boot
 
 mongoose
   .connect(mongodbAPI, {
@@ -94,6 +95,7 @@ mongoose
     tlsAllowInvalidHostnames: true,
   })
   .then((result) => {
+
     app.listen(8080, () => console.log("Server is running"));
   })
   .catch((err) => console.error("MongoDB connection errors:", err));
