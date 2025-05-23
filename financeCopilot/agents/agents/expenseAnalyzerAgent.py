@@ -120,52 +120,51 @@ Example Target JSON Structure:
 """
 
 class ExpenseAnalyzerAgent(Agent):
-    
-    def __init__(self,name,role):
-        #super().__init__(name="Budget Planner Agent", role=expenseAnalyzerRole)
+
+    def __init__(self, name, role):
         super().__init__(name=name, role=role)
 
-        self.model = genai.GenerativeModel(
+        self.json_model = genai.GenerativeModel(
             model_name="gemini-2.0-flash",
             generation_config={
                 "temperature": 0.3,
                 "top_p": 0.95,
                 "top_k": 64,
                 "max_output_tokens": 8192,
-                "response_mime_type": "application/json",
+                "response_mime_type": "application/json"
             },
             system_instruction=self.role,
         )
 
-    """
-    Extracts all text from the given PDF file using pdfplumber.
-    Iterates through pages and combines the text into a single string.
-    Returns the full text or raises an exception if extraction fails.
-    """
+        self.text_model = genai.GenerativeModel(
+            model_name="gemini-2.0-flash",
+            generation_config={
+                "temperature": 0.3,
+                "top_p": 0.95,
+                "top_k": 64,
+                "max_output_tokens": 2048
+            },
+            system_instruction=self.role,
+        )
+
     def extract_text_from_pdf(self, pdf_path: str) -> str:
-        print(f"🔍 Extracting text from: {pdf_path}")
+        print("📄 PDF'den metin çıkarılıyor...")
         all_text = ""
         try:
             with pdfplumber.open(pdf_path) as pdf:
-                for page_num, page in enumerate(pdf.pages):
+                for i, page in enumerate(pdf.pages, start=1):
                     text = page.extract_text()
-                    print(f"📄 Page {page_num + 1} text length: {len(text) if text else 0}")
+                    print(f"📃 Sayfa {i}: {len(text) if text else 0} karakter")
                     if text:
                         all_text += text + "\n"
-            print(f"✅ Total extracted text length: {len(all_text)}")
-            print("📝 First 500 characters of extracted text:")
-            print(all_text[:500])
+            print("✅ Metin çıkarma tamamlandı.")
             return all_text
         except Exception as e:
-            print(f"❌ Error extracting text: {str(e)}")
+            print(f"❌ Metin çıkarma hatası: {str(e)}")
             raise
 
-    """
-    Splits long text into smaller chunks without breaking lines.
-    Each chunk stays under the specified max character limit.
-    Useful for sending parts of the text to an LLM.
-    """
     def split_text_into_chunks(self, text, max_chars=5000):
+        print("✂️ Metin parçalara bölünüyor...")
         chunks = []
         current = ""
         for line in text.splitlines():
@@ -176,66 +175,48 @@ class ExpenseAnalyzerAgent(Agent):
                 current = line + "\n"
         if current.strip():
             chunks.append(current.strip())
-        print(f"📦 Split text into {len(chunks)} chunks")
-        print(f"📝 First chunk preview: {chunks[0][:200] if chunks else 'No chunks'}")
+        print(f"📦 {len(chunks)} adet parça oluşturuldu.")
         return chunks
 
-
-    """
-    Analyzes the given PDF, extracts and parses its content.
-    Sends chunks of text to an LLM and collects structured JSON output.
-    Calculates spending totals and returns the final structured result.
-    """
     def categorize_pdf(self, pdf_file) -> dict:
         temp_dir = tempfile.gettempdir()
         temp_path = os.path.join(temp_dir, pdf_file.filename)
+
         try:
+            print("📥 PDF dosyası geçici klasöre kaydediliyor...")
             pdf_file.save(temp_path)
-            print(f"📥 Loading PDF: {temp_path}")
+            print(f"🗂️ Kaydedilen dosya: {temp_path}")
 
             text = self.extract_text_from_pdf(temp_path)
             if not text.strip():
-                raise ValueError("PDF boş ya da metin çıkarılamadı.")
-
-            with open("extracted_text_debug.txt", "w", encoding="utf-8") as f:
-                f.write(text)
-            print("✅ Saved extracted text to extracted_text_debug.txt")
+                raise ValueError("📭 PDF boş veya metin içeremiyor.")
 
             chunks = self.split_text_into_chunks(text, max_chars=5000)
-            print(f"🔍 Split into {len(chunks)} chunks")
 
             all_transactions = []
             first_card_limit = None
             first_customer_info = None
 
             for i, chunk in enumerate(chunks):
-                print(f"🚀 Processing chunk {i + 1}/{len(chunks)}")
-                print(f"📝 Chunk preview: {chunk[:200]}")
-                response = self.generate_response("Şu metni dönüştür:\n" + chunk)
-
-                if isinstance(response, str):
-                    try:
-                        response = json.loads(response)
-                    except Exception as e:
-                        print("❌ JSON dönüşüm hatası:", e)
-                        raise
-
+                print(f"🤖 Gemini ile işleniyor: Parça {i+1}/{len(chunks)}")
+                response = self.json_model.generate_content("Şu metni dönüştür:\n" + chunk)
                 try:
-                    print(f"🤖 Agent response: {json.dumps(response, indent=2, ensure_ascii=False)}")
+                    parsed = json.loads(response.text)
+                    print("✅ JSON verisi başarıyla çözüldü.")
                 except Exception as e:
-                    print("❌ Agent response parse hatası:", e)
-                    print("🔁 Gelen yanıt:\n", response)
+                    print(f"❌ JSON çözümleme hatası: {str(e)}")
+                    continue
 
-                if isinstance(response, dict):
-                    customer = response.get("customer_info", {})
-                    card = response.get("card_limit", {})
-                    if not first_customer_info and customer.get("full_name"):
-                        first_customer_info = customer
-                    if not first_card_limit and (card.get("total_card_limit") or card.get("remaining_card_limit")):
-                        first_card_limit = card
+                customer = parsed.get("customer_info", {})
+                card = parsed.get("card_limit", {})
+                if not first_customer_info and customer.get("full_name"):
+                    first_customer_info = customer
+                if not first_card_limit and (card.get("total_card_limit") or card.get("remaining_card_limit")):
+                    first_card_limit = card
 
-                    transactions = response.get("transactions", [])
-                    all_transactions.extend(transactions)
+                all_transactions.extend(parsed.get("transactions", []))
+
+            print(f"💳 Toplam işlem sayısı: {len(all_transactions)}")
 
             for t in all_transactions:
                 raw_amount = t.get("amount", "")
@@ -244,9 +225,8 @@ class ExpenseAnalyzerAgent(Agent):
                         raw_amount.replace(".", "").replace(",", ".").replace(" TL", "").replace("-", "").strip()
                     )
                     t["amount"] = f"{amount_number:,.2f} TL".replace(",", "X").replace(".", ",").replace("X", ".")
-                except (ValueError, TypeError) as e:
-                    print("❌ Amount formatlama hatası:", e)
-
+                except (ValueError, TypeError):
+                    pass
 
             all_category_totals = {}
             for t in all_transactions:
@@ -263,6 +243,8 @@ class ExpenseAnalyzerAgent(Agent):
                 except:
                     pass
 
+            print("📊 Harcama kategorileri hesaplandı.")
+
             final_output = {
                 "type": "account statement",
                 "customer_info": first_customer_info or {"full_name": None},
@@ -272,13 +254,64 @@ class ExpenseAnalyzerAgent(Agent):
                 },
                 "category_totals": all_category_totals,
                 "transactions": all_transactions
-                }
+            }
 
+            natural_summary = self.generate_natural_language_summary(final_output)
+            final_output["natural_summary"] = natural_summary
+            print("🗣️ Doğal dil özeti eklendi.")
+
+            print("✅ PDF analiz işlemi tamamlandı.")
             return final_output
 
         except Exception as e:
-            print("🚫 Hata:", e)
+            print("🚫 Genel hata:", e)
             raise
         finally:
             if os.path.exists(temp_path):
                 os.remove(temp_path)
+                print("🧹 Geçici dosya silindi.")
+
+    def generate_natural_language_summary(self, final_output: dict) -> str:
+        try:
+            customer_name = final_output.get("customer_info", {}).get("full_name", "müşteri")
+            category_totals = final_output.get("category_totals", {})
+
+            if not category_totals:
+                return "Harcama kategorisi bulunamadı."
+
+            category_emojis = {
+                "food_drinks": "🍽️",
+                "clothing_cosmetics": "👗",
+                "subscription": "📺",
+                "groceries": "🛒",
+                "transportation": "🚌",
+                "entertainment": "🎭",
+                "stationery_books": "📚",
+                "technology": "💻",
+                "bill_payment": "💡",
+                "education": "🎓",
+                "health": "🏥",
+                "cash_withdrawal": "💵",
+                "other": "🔧"
+            }
+
+            prompt = f"""
+Aşağıdaki müşteri bilgisine ve harcama özetine göre, Türkçe olarak saygılı ve doğal bir dille bir özet yaz:
+1. Müşteri adı: {customer_name}
+2. Harcama kategorileri ve tutarlar (emoji destekli):
+"""
+            for category, amount in category_totals.items():
+                emoji = category_emojis.get(category, "")
+                prompt += f"- {emoji} {category.replace('_', ' ').title()}: {amount}\n"
+
+            prompt += """
+Metin şöyle başlamalı: "Sayın [Ad Soyad], hesap dökümünüzü inceledim. Analizlerime göre şu kategorilerde şu kadar harcama yapmışsınız:"
+"""
+
+            response = self.text_model.generate_content(prompt)
+            print("🧠 Doğal dil özeti üretildi.")
+            return response.text.strip()
+
+        except Exception as e:
+            print("❌ Özet oluşturulurken hata:", e)
+            return "Özet oluşturulurken bir hata oluştu."
