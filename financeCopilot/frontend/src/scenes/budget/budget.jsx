@@ -141,7 +141,7 @@ const Budget = () => {
                     Monthly Income
                   </Typography>
                   <Typography variant="h4" sx={{ color: colors.grey[100] }}>
-                    {formatCurrency(budgetData.financial_summary.monthly_income)}
+                    {formatCurrency(budgetData.financial_summary.monthly_income_calculated_by_transcation)}
                   </Typography>
                 </Box>
               </Box>
@@ -158,7 +158,7 @@ const Budget = () => {
                     Total Spending
                   </Typography>
                   <Typography variant="h4" sx={{ color: colors.grey[100] }}>
-                    {formatCurrency(budgetData.financial_summary.total_spending)}
+                    {formatCurrency(budgetData.financial_summary.total_spending_calculated_by_transaction)}
                   </Typography>
                 </Box>
               </Box>
@@ -175,7 +175,7 @@ const Budget = () => {
                     Net Difference
                   </Typography>
                   <Typography variant="h4" sx={{ color: colors.grey[100] }}>
-                    {formatCurrency(budgetData.financial_summary.net_difference)}
+                    {formatCurrency(budgetData.financial_summary.net_difference_calculated_by_transaction)}
                   </Typography>
                 </Box>
               </Box>
