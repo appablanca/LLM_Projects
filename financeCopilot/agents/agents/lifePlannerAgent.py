@@ -1,6 +1,8 @@
 from agents.baseAgent import Agent        
 import os
 import httpx
+
+import requests
 from fastapi import FastAPI
 from dotenv import load_dotenv
 import google.generativeai as genai
@@ -108,6 +110,52 @@ class LifePlannerAgent(Agent):
             except httpx.HTTPError as e:
                 print(f"Error fetching user data: {e}")
                 return {}
+    def get_vehicle_options(self, make, model):
+        try:
+            response = requests.get(
+                f"https://api.carsxe.com/specs?make={make}&model={model}",
+                params={"key": os.getenv("CARSXE_API_KEY")}
+            )
+            response.raise_for_status()
+            data = response.json()
+            vehicles = [
+                {
+                    "make": car.get("make"),
+                    "model": car.get("model"),
+                    "year": car.get("year"),
+                    "price": car.get("price")
+                }
+                for car in data.get("vehicles", []) if "price" in car
+            ]
+            return vehicles[:5]  # İlk 5 aracı döndür
+        except Exception as e:
+            print(f"CarsXE API error: {e}")
+            return []
+
+
+    def get_housing_options(self, location):
+        try:
+            response = requests.get(
+                f"https://api.zillow.com/propertySearch?location={location}",
+                headers={"Authorization": f"Bearer {os.getenv('ZILLOW_API_KEY')}"}
+            )
+            response.raise_for_status()
+            data = response.json()
+            properties = [
+                {
+                    "address": prop.get("address"),
+                    "rentEstimate": prop.get("rentEstimate"),
+                    "bedrooms": prop.get("bedrooms"),
+                    "bathrooms": prop.get("bathrooms"),
+                    "squareFeet": prop.get("livingArea")
+                }
+                for prop in data.get("properties", []) if prop.get("rentEstimate")
+            ]
+            return properties[:5]  # İlk 5 evi döndür
+        except Exception as e:
+            print(f"Zillow API error: {e}")
+            return []
+    
 
     async def fetch_macro_data(self):
         try:
@@ -239,7 +287,30 @@ User Profile:
             print(f"📎 Prompt sent to model:\n{prompt}")
 
             response = self.model.generate_content(prompt)
-            return json.loads(response.text.strip())
+            response = self.model.generate_content(prompt)
+
+# 🔽 İşte buraya ekle!
+            parsed_response = json.loads(response.text.strip())
+
+            goal = parsed_response.get("lifePlan", {}).get("goal", "").lower()
+
+            if "araba" in goal or "car" in goal or "otomobil" in goal:
+                vehicle_data = self.get_vehicle_options(make="Renault", model="Megane")  # örnek veri
+                vehicle_section = "Örnek Araçlar:\n" + "\n".join(
+                [f"- {v['year']} {v['make']} {v['model']}: {v['price']} TRY" for v in vehicle_data]
+    )
+                parsed_response["lifePlan"]["recommendations"].append(vehicle_section)
+
+            elif "ev" in goal or "house" in goal or "konut" in goal:
+                housing_data = self.get_housing_options(location=parsed_profile.get("city", "Istanbul"))
+                housing_section = "Örnek Konutlar:\n" + "\n".join(
+                [f"- {h['address']} – {h['squareFeet']} m² – {h['rentEstimate']} TRY/ay" for h in housing_data]
+    )
+                parsed_response["lifePlan"]["recommendations"].append(housing_section)
+
+# 🔚 Artık enriched JSON dönüyorsun:
+            return parsed_response
+
 
         except Exception as e:
             print(f"Error in get_life_plan: {e}")
