@@ -4,7 +4,7 @@ const axios = require("axios");
 const Stock = require("../models/stockInfo");
 // TWELVE_DATA_API_KEY= "39047c1681c8452ba5b4fda546541a10" //femp
 // TWELVE_DATA_API_KEY= "8df44756db4c4d379ab253b05fefc6da" //feyzieren
-TWELVE_DATA_API_KEY= "355b0b5039e14dbf87a85a61e7a44715" //feyzibattle
+TWELVE_DATA_API_KEY = "355b0b5039e14dbf87a85a61e7a44715"; //feyzibattle
 // TWELVE_DATA_API_KEY= "13a55b9967904dc6b7dedf185b986648" //20feyzi02
 
 const BASE_URL = "https://api.twelvedata.com/time_series";
@@ -16,8 +16,10 @@ exports.fetchAllStocksFromFile = async (req, res) => {
   try {
     const fileData = fs.readFileSync(symbolsPath, "utf8");
     // symbols = fileData.split("\n").map(line => line.trim()).filter(line => line);
-    symbols = fileData.split(/\r?\n/).map(line => line.trim()).filter(line => line);
-
+    symbols = fileData
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line);
   } catch (err) {
     console.error("Error reading symbols.txt:", err);
     return res.status(500).json({ message: "Failed to read symbol list." });
@@ -27,15 +29,13 @@ exports.fetchAllStocksFromFile = async (req, res) => {
 
   for (const symbol of symbols) {
     try {
-
-        const existingStock = await Stock
-            .findOne({ symbol})
-            .select("symbol")
-            .lean();
-        if (existingStock) {
-            results.push({ symbol, status: "Already exists" });
-            continue;
-        }
+      const existingStock = await Stock.findOne({ symbol })
+        .select("symbol")
+        .lean();
+      if (existingStock) {
+        results.push({ symbol, status: "Already exists" });
+        continue;
+      }
 
       const response = await axios.get(BASE_URL, {
         params: {
@@ -71,7 +71,7 @@ exports.fetchAllStocksFromFile = async (req, res) => {
         stockDoc = new Stock({
           symbol,
           data: formattedData,
-          type: 0, 
+          type: 0,
           deleted: 0,
         });
       }
@@ -80,14 +80,16 @@ exports.fetchAllStocksFromFile = async (req, res) => {
       console.log(`Data for ${symbol} saved successfully.`);
       results.push({ symbol, status: "Saved", entries: formattedData.length });
     } catch (err) {
-      console.error(`Error for symbol ${symbol}:`, err.response?.data || err.message);
+      console.error(
+        `Error for symbol ${symbol}:`,
+        err.response?.data || err.message
+      );
       results.push({ symbol, status: "Error", message: err.message });
     }
   }
   console.log("---------------------------");
-  return res.status(200).json({message: "Data fetched successfully"});
+  return res.status(200).json({ message: "Data fetched successfully" });
 };
-
 
 exports.getStockData = async (req, res) => {
   const { symbol } = req.body;
@@ -100,7 +102,9 @@ exports.getStockData = async (req, res) => {
       return res.status(404).json({ message: "Stock not found" });
     }
     // Only include non-deleted entries
-    const filteredData = (stockData.data || []).filter(entry => entry.deleted === 0);
+    const filteredData = (stockData.data || []).filter(
+      (entry) => entry.deleted === 0
+    );
     const formattedData = filteredData.map((entry) => ({
       date: entry.date,
       open: entry.open,
@@ -112,7 +116,7 @@ exports.getStockData = async (req, res) => {
     return res.status(200).json({
       symbol: stockData.symbol,
       type: stockData.type,
-      data: formattedData
+      data: formattedData,
     });
   } catch (err) {
     console.error("Error fetching stock data:", err);
@@ -179,10 +183,14 @@ exports.fetchStockDataFromAPI = async (req, res) => {
 //function to calculate volatility
 const calculateVolatility = (data) => {
   if (!data || data.length < 2) return 0.0;
-  const closes = data.map(entry => entry.close);
-  const returns = closes.slice(1).map((close, i) => Math.log(close / closes[i]));
+  const closes = data.map((entry) => entry.close);
+  const returns = closes
+    .slice(1)
+    .map((close, i) => Math.log(close / closes[i]));
   const mean = returns.reduce((acc, val) => acc + val, 0) / returns.length;
-  const variance = returns.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / (returns.length - 1);
+  const variance =
+    returns.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) /
+    (returns.length - 1);
   return Math.round(Math.sqrt(variance) * Math.sqrt(52) * 100) / 100;
 };
 
@@ -196,7 +204,7 @@ const calculateGrowth = (data) => {
 };
 
 exports.createExtraMetadata = async (req, res) => {
-  // Get all stocks 
+  // Get all stocks
   const stocks = await Stock.find({ deleted: 0, type: 0 }).lean();
   if (!stocks || stocks.length === 0) {
     return res.status(404).json({ message: "No stocks found" });
@@ -212,31 +220,38 @@ exports.createExtraMetadata = async (req, res) => {
     const growth = calculateGrowth(data);
 
     // Calculate closes statistics
-    const closes = data.map(entry => entry.close);
-    const avg_close = Math.round((closes.reduce((a, b) => a + b, 0) / closes.length) * 100) / 100;
+    const closes = data.map((entry) => entry.close);
+    const avg_close =
+      Math.round((closes.reduce((a, b) => a + b, 0) / closes.length) * 100) /
+      100;
     const min_close = Math.round(Math.min(...closes) * 100) / 100;
     const max_close = Math.round(Math.max(...closes) * 100) / 100;
 
     // Update the stock document
     await Stock.updateOne(
       { symbol },
-      { $set: { 
-          volatility, 
+      {
+        $set: {
+          volatility,
           growth_pct: growth,
           avg_close,
           min_close,
-          max_close
-        } 
+          max_close,
+        },
       }
     );
   }
-  return res.status(200).json({ message: "Volatility, growth, and close stats updated successfully" });
+  return res
+    .status(200)
+    .json({
+      message: "Volatility, growth, and close stats updated successfully",
+    });
 };
 
 exports.getAllStocks = async (req, res) => {
   try {
     const stocks = await Stock.find({ deleted: 0, type: 0 })
-      .select('-data') // Exclude the 'data' field
+      .select("-data") // Exclude the 'data' field
       .lean();
 
     if (!stocks || stocks.length === 0) {
@@ -247,5 +262,35 @@ exports.getAllStocks = async (req, res) => {
   } catch (err) {
     console.error("Error fetching all stocks:", err);
     return res.status(500).json({ message: "Failed to fetch stocks" });
+  }
+};
+
+exports.resolveNewsUrl = async (req, res) => {
+  const { url } = req.query;
+
+  if (!url || !url.startsWith("http")) {
+    return res.status(400).json({ success: false, message: "Invalid URL" });
+  }
+
+  try {
+    const response = await axios.get(url, {
+      maxRedirects: 5,
+      validateStatus: null,
+    });
+
+    const finalUrl = response.request.res.responseUrl;
+
+    if (finalUrl && finalUrl.startsWith("http")) {
+      return res.status(200).json({ success: true, finalUrl });
+    } else {
+      return res
+        .status(500)
+        .json({ success: false, message: "Could not resolve final URL" });
+    }
+  } catch (error) {
+    console.error("Error resolving URL:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to resolve URL" });
   }
 };

@@ -55,9 +55,61 @@ router.get("/fetchAllStocksFromFile", generatorController.fetchAllStocksFromFile
  *       500:
  *         description: Failed to fetch stock data
  */
+
+/**
+ * @swagger
+ * /generator/resolveNewsUrl:
+ *   get:
+ *     summary: Resolve the final URL after following redirects
+ *     tags: [Generator]
+ *     parameters:
+ *       - in: query
+ *         name: url
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The URL to resolve
+ *     responses:
+ *       200:
+ *         description: Successfully resolved the final URL
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 finalUrl:
+ *                   type: string
+ *       400:
+ *         description: Invalid URL provided
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       500:
+ *         description: Failed to resolve the URL
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ */
 router.post("/getStockData", generatorController.getStockData);
 
 router.get("/createExtraMetadata", generatorController.createExtraMetadata);
 
 router.get("/getAllStocks", generatorController.getAllStocks);
+
+router.get("/resolveNewsUrl", generatorController.resolveNewsUrl);
+
 module.exports = router;

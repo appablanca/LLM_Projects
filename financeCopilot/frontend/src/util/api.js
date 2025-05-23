@@ -1,5 +1,5 @@
 import axiosInstance from "./axiosInstance.js";
-
+import axios from "axios";
 const api = "http://localhost:8080";
 
 async function postLogin(email, password, rememberMe) {
@@ -89,7 +89,7 @@ export function isAuth() {
 
 async function sendUserSurvey(surveyData) {
   try {
-    const response = await axiosInstance.post(`/userPanel/doSurvey`,{
+    const response = await axiosInstance.post(`/userPanel/doSurvey`, {
       surveyData: surveyData,
     });
     return response.data;
@@ -128,7 +128,7 @@ export function getSurveyFields() {
   return getUserSurvey();
 }
 
-async function editSurveyFields (surveyData) {
+async function editSurveyFields(surveyData) {
   try {
     const response = await axiosInstance.post(`/userPanel/editSurvey`, {
       surveyData: surveyData,
@@ -152,12 +152,12 @@ export function editSurvey(surveyData) {
 async function sendMessageToCopilot(message, file) {
   try {
     const formData = new FormData();
-    if (message) formData.append('message', message);
-    if (file) formData.append('file', file);
+    if (message) formData.append("message", message);
+    if (file) formData.append("file", file);
 
     const response = await axiosInstance.post(`/copilot/chat`, formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
     return response.data;
@@ -177,13 +177,20 @@ export function sendCopilotMessage(message, file) {
   return sendMessageToCopilot(message, file);
 }
 
-async function saveTransactionsAndSpending(transactions, categoryTotals, cardLimit) {
+async function saveTransactionsAndSpending(
+  transactions,
+  categoryTotals,
+  cardLimit
+) {
   try {
-    const response = await axiosInstance.post(`/transactions/saveTransactionsAndSpending`, {
-      transactions,
-      category_totals: categoryTotals,
-      card_limit: cardLimit
-    });
+    const response = await axiosInstance.post(
+      `/transactions/saveTransactionsAndSpending`,
+      {
+        transactions,
+        category_totals: categoryTotals,
+        card_limit: cardLimit,
+      }
+    );
     return response.data;
   } catch (error) {
     console.error(
@@ -203,7 +210,9 @@ export function saveTransactions(transactions, categoryTotals, cardLimit) {
 
 async function getTransactionsAndSpending() {
   try {
-    const response = await axiosInstance.get(`/transactions/getTransactionsAndSpending`);
+    const response = await axiosInstance.get(
+      `/transactions/getTransactionsAndSpending`
+    );
     return response.data.data;
   } catch (error) {
     console.error(
@@ -299,4 +308,25 @@ async function removeStock(symbol) {
 }
 export function removeUserStock(symbol) {
   return removeStock(symbol);
+}
+
+async function resolveNewsUrl(url) {
+  try {
+    const response = await axiosInstance.get(`/generator/resolveNewsUrl`, {
+      params: { url: url },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error resolving news URL:",
+      error.response ? error.response.data : error.message
+    );
+    throw new Error(
+      "Failed to resolve news URL: " +
+        (error.response ? error.response.data : error.message)
+    );
+  }
+}
+export function resolveUrl(url) {
+  return resolveNewsUrl(url);
 }

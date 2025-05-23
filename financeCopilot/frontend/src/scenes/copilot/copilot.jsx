@@ -11,6 +11,7 @@ import {
   useTheme,
   Dialog,
 } from "@mui/material";
+
 import {
   SmartToy,
   Person,
@@ -22,7 +23,12 @@ import {
 
 import { toast } from "react-toastify";
 
-import { sendCopilotMessage, saveTransactions, saveUserStocks } from "../../util/api";
+import {
+  sendCopilotMessage,
+  saveTransactions,
+  saveUserStocks,
+  resolveUrl,
+} from "../../util/api";
 import { tokens } from "../../theme";
 
 const Copilot = () => {
@@ -32,6 +38,8 @@ const Copilot = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [showTrackDialog, setShowTrackDialog] = useState(false);
   const [suggestedStocks, setSuggestedStocks] = useState([]);
+  const [sources, setSources] = useState(null);
+  const [showSources, setShowSources] = useState(false);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -109,14 +117,53 @@ const Copilot = () => {
           }
         }
         botMsg = JSON.stringify(response.response, null, 2);
+
+        if (Array.isArray(response.response.URLs)) {
+          const resolvedUrls = await Promise.all(
+            response.response.URLs.map(async (url) => {
+              try {
+                const res = await resolveUrl(url);
+                if (res && res.finalUrl) {
+                  return res.finalUrl;
+                } else {
+                  console.warn(
+                    "Unexpected response from resolveUrl:",
+                    JSON.stringify(res)
+                  );
+                  return url;
+                }
+              } catch (err) {
+                console.error("resolveUrl threw:", JSON.stringify(err));
+                return url;
+              }
+            })
+          );
+          setSources(resolvedUrls);
+          console.log("Sources:", resolvedUrls);
+        } else {
+          setSources(null);
+        }
       } else {
         botMsg = "No response received.";
+        setSources(null);
       }
 
-      setMessages((prev) => [...prev,{ sender: "ai", text: botMsg }]);
+      setMessages((prev) => [...prev, { sender: "ai", text: botMsg }]);
     } catch (error) {
-      console.error("Error in handleSendMessage:", error); // Debug log
-      setMessages((prev) => [...prev, userMsg, { sender: "ai", text: "An error occurred. Please try again." }]);
+      if (error instanceof Error) {
+        console.error("Error in handleSendMessage:", error.message);
+      } else {
+        console.error(
+          "Unhandled error in handleSendMessage:",
+          JSON.stringify(error, null, 2)
+        );
+      }
+      setMessages((prev) => [
+        ...prev,
+        userMsg,
+        { sender: "ai", text: "An error occurred. Please try again." },
+      ]);
+      setSources(null);
     } finally {
       setLoading(false);
       setSelectedFile(null);
@@ -201,6 +248,7 @@ const Copilot = () => {
           flexDirection: "column",
           overflow: "hidden",
           backgroundColor: colors.primary[800],
+          position: "relative",
         }}
       >
         {/* Header */}
@@ -221,6 +269,30 @@ const Copilot = () => {
             <Typography variant="body2">How can I assist you today?</Typography>
           </Box>
         </Box>
+        {Array.isArray(sources) && sources.length > 0 && (
+          <Button
+            size="small"
+            variant="outlined"
+            sx={{
+              position: "absolute",
+              top: 12,
+              right: 12,
+              zIndex: 20,
+              fontSize: "0.75rem",
+              padding: "2px 8px",
+              borderRadius: 2,
+              color: colors.grey[100],
+              borderColor: colors.grey[300],
+              "&:hover": {
+                borderColor: colors.greenAccent[500],
+                color: colors.greenAccent[400],
+              },
+            }}
+            onClick={() => setShowSources(!showSources)}
+          >
+            {showSources ? "Hide News Sources" : "Show News Sources"}
+          </Button>
+        )}
 
         {/* Messages */}
         <Box
@@ -239,7 +311,62 @@ const Copilot = () => {
               <CircularProgress size={24} />
             </Box>
           )}
-          <div ref={messagesEndRef} />
+          <Box ref={messagesEndRef} />
+          {showSources && Array.isArray(sources) && sources.length > 0 && (
+            <Box
+              sx={{
+                position: "absolute",
+                right: 8,
+                top: 80,
+                backgroundColor: colors.primary[600],
+                padding: 1,
+                borderRadius: 2,
+                boxShadow: 3,
+                zIndex: 10,
+                maxWidth: "90vw",
+                maxHeight: "80vh",
+                overflowX: "auto",
+              }}
+            >
+              <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                News Sources:
+              </Typography>
+              {sources.map((url, index) => (
+                <Tooltip
+                  key={index}
+                  title={
+                    <Box sx={{ width: 360, height: 200, overflow: "hidden" }}>
+                      <Box sx={{ transform: "scale(0.4)", transformOrigin: "top left", width: "900px", height: "500px" }}>
+                        <iframe
+                          src={url}
+                          width="100%"
+                          height="100%"
+                          style={{ border: "none" }}
+                          title={`iframe-${index}`}
+                        />
+                      </Box>
+                    </Box>
+                  }
+                  arrow
+                  placement="left"
+                >
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: colors.greenAccent[400],
+                      cursor: "pointer",
+                      "&:hover": { textDecoration: "underline" },
+                      mb: 1,
+                      wordBreak: "break-all",
+                    }}
+                    onClick={() => window.open(url, "_blank")}
+                  >
+                    {url}
+                  </Typography>
+                </Tooltip>
+              ))}
+            </Box>
+          )}
         </Box>
 
         {/* Input */}
