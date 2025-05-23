@@ -122,3 +122,31 @@ exports.getFields = async (req, res) => {
     }
 };
 
+exports.invest = async (req, res) => {
+  const { userId, investData } = req.body;
+  if (!userId || !Array.isArray(investData) || investData.length === 0) {
+    return res.status(400).json({ message: "Invalid request data" });
+  }
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Convert symbols into fieldSchema-compliant objects
+    const investmentFields = investData.map(symbol => ({
+      name: "investment",     // or "stock" if you prefer
+      content: symbol,
+      deleted: 0
+    }));
+
+    user.fields.push(...investmentFields);
+    await user.save();
+
+    return res.status(200).json({ message: "Investments saved successfully" });
+  } catch (error) {
+    console.error("Error saving investments:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};

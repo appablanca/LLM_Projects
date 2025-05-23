@@ -226,4 +226,73 @@ router.post("/editSurvey", userPanelController.editSurvey);
  *                   example: Internal server error
  */
 router.get("/getFields", userPanelController.getFields);
+/**
+ * @swagger
+ * /userPanel/invest:
+ *   post:
+ *     summary: Save stock symbols as investment fields for the user
+ *     tags: [userPanel]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *               - investData
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 description: ID of the user to whom investments will be added
+ *                 example: "6632d3bda7e874f69a33b2c1"
+ *               investData:
+ *                 type: array
+ *                 description: Array of stock symbols to add as investment fields
+ *                 items:
+ *                   type: string
+ *                   example: "AAPL"
+ *     responses:
+ *       200:
+ *         description: Investments saved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Investments saved successfully
+ *       400:
+ *         description: Invalid request data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Invalid request data
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: User not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Internal server error
+ */
+router.post("/invest", userPanelController.invest);
 module.exports = router;

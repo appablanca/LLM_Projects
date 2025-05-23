@@ -181,11 +181,26 @@ News URL: {", ".join(news_summary.get("URL", []))}
     async def get_financal_advise(self, user_message,user):
         userS = json.loads(user)
         summery_lines = self.give_summary_lines()
-        print(user)
+        # Map user fields from the 'fields' array to a flat dictionary
+        field_map = {f["name"].lower(): f["content"] for f in userS.get("fields", [])}
+
+        userData = {
+            "age": field_map.get("age"),
+            "income": field_map.get("income"),
+            "financial_goals": field_map.get("financial goals"),
+            "housing_status": field_map.get("housing"),
+            "marital_status": field_map.get("marital status"),
+            "risk_tolerance": field_map.get("risk tolerance"),
+            "investment_horizon": field_map.get("investment horizon"),
+            "investment_expectation": field_map.get("investment expectation"),
+            "loss reaction": field_map.get("loss reaction"),
+            "occupation": field_map.get("occupation"),
+            
+        }
         prompt = (
             user_message
             + "\nUser profile: "
-            + json.dumps(userS)
+            + json.dumps(userData)
             + "\nBelow is a summary of 10 low-risk stock candidates with recent news analysis:\n"
             + summery_lines
         )
