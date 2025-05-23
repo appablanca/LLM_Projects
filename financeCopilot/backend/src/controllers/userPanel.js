@@ -123,7 +123,19 @@ exports.getFields = async (req, res) => {
 };
 
 exports.invest = async (req, res) => {
-  const { userId, investData } = req.body;
+  let userId;
+  const { investData } = req.body;
+  if (req.query.userId) {
+    userId = req.query.userId;
+} else {
+    // Fallback to session-based authentication
+    if (!req.session || !req.session.user) {
+        return res
+            .status(401)
+            .json({ message: "Unauthorized: User session not found" });
+    }
+    userId = req.session.user.id;
+}
   if (!userId || !Array.isArray(investData) || investData.length === 0) {
     return res.status(400).json({ message: "Invalid request data" });
   }

@@ -1,40 +1,64 @@
-const WebSocket = require('ws');
+const WebSocket = require("ws");
 
-function startWebSocketClient() {
-  const socket = new WebSocket('wss://ws.finnhub.io?token=d0mpdvhr01qi78ngcl50d0mpdvhr01qi78ngcl5g');
+const finnhubUrl = "wss://ws.finnhub.io?token=d0o8kghr01qu2361497gd0o8kghr01qu23614980";
+const server = new WebSocket.Server({ port: 8081 });
 
-  socket.on('open', () => {
-    console.log('WebSocket connected');
-    socket.send(JSON.stringify({ type: 'subscribe', symbol: 'AAPL' }));
-    socket.send(JSON.stringify({ type: 'subscribe', symbol: 'AMZN' }));
-    socket.send(JSON.stringify({ type: 'subscribe', symbol: 'KO' }));
-  });
+// Shared Finnhub WebSocket connection
+const finnhubSocket = new WebSocket(finnhubUrl);
 
-  socket.on('message', (data) => {
+const clients = new Set();
+const subscribedSymbols = new Set();
+
+finnhubSocket.on("open", () => {
+  console.log("Connected to Finnhub WebSocket");
+});
+
+finnhubSocket.on("message", (data) => {
   try {
-    const json = JSON.parse(data.toString()); // Convert buffer to JSON
-    const entries = json.data;
-
-    if (Array.isArray(entries)) {
-      entries.forEach(entry => {
-        const symbol = entry.s;
-        const price = entry.p;
-        console.log(`Symbol: ${symbol}, Price: ${price}`);
-      });
+    const json = JSON.parse(data);
+    if (Array.isArray(json.data)) {
+      for (const client of clients) {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify(json.data));
+        }
+      }
     }
-  } catch (err) {
-    console.error('Failed to parse WebSocket message:', err);
+  } catch (e) {
+    console.error("Error parsing message from Finnhub:", e);
   }
 });
 
-  socket.on('error', (err) => {
-    console.error('WebSocket error:', err);
+finnhubSocket.on("error", (err) => {
+  console.error("Finnhub WebSocket error:", err.message);
+});
+
+server.on("connection", (clientSocket) => {
+  console.log("Frontend WebSocket connected");
+  clients.add(clientSocket);
+
+  clientSocket.on("message", (msg) => {
+    try {
+      const { type, symbols } = JSON.parse(msg);
+      if (type === "subscribe" && Array.isArray(symbols)) {
+        symbols.forEach((symbol) => {
+          if (!subscribedSymbols.has(symbol)) {
+            subscribedSymbols.add(symbol);
+            finnhubSocket.send(JSON.stringify({ type: "subscribe", symbol }));
+          }
+        });
+      }
+    } catch (e) {
+      console.error("Error parsing message from frontend:", e);
+    }
   });
 
-  socket.on('close', () => {
-    console.log('WebSocket closed. Reconnecting...');
-    setTimeout(startWebSocketClient, 5000); // Optional: auto-reconnect
+  clientSocket.on("close", () => {
+    clients.delete(clientSocket);
   });
-}
 
-module.exports = { startWebSocketClient };
+  clientSocket.on("error", () => {
+    clients.delete(clientSocket);
+  });
+});
+
+module.exports = { server };

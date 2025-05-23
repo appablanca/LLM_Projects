@@ -34,6 +34,15 @@ const Transactions = () => {
     maxAmount: "",
     flow: "", // New filter for flow
   });
+  const [sortOption, setSortOption] = useState("");
+
+  // Helper to parse "dd.mm.yyyy" or "dd/mm/yyyy" to Date object
+  const parseDate = (str) => {
+    if (!str) return new Date("Invalid Date");
+    const delimiter = str.includes(".") ? "." : "/";
+    const [day, month, year] = str.split(delimiter);
+    return new Date(`${year}-${month}-${day}`);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -58,8 +67,32 @@ const Transactions = () => {
       const matchesFlow = !filters.flow || t.flow === filters.flow; // New flow filter logic
       return matchesCategory && matchesDate && matchesAmount && matchesFlow;
     });
-    setFiltered(result);
-  }, [filters, transactions]);
+
+    let sorted = [...result];
+    switch (sortOption) {
+      case "date_asc":
+        sorted.sort((a, b) => parseDate(a.date) - parseDate(b.date));
+        break;
+      case "date_desc":
+        sorted.sort((a, b) => parseDate(b.date) - parseDate(a.date));
+        break;
+      case "amount_asc":
+        sorted.sort((a, b) => {
+          const getAmount = (s) => parseFloat(s.amount.replace(/\./g, "").replace(",", ".").replace(" TL", ""));
+          return getAmount(a) - getAmount(b);
+        });
+        break;
+      case "amount_desc":
+        sorted.sort((a, b) => {
+          const getAmount = (s) => parseFloat(s.amount.replace(/\./g, "").replace(",", ".").replace(" TL", ""));
+          return getAmount(b) - getAmount(a);
+        });
+        break;
+      default:
+        break;
+    }
+    setFiltered(sorted);
+  }, [filters, transactions, sortOption]);
 
   return (
     <Box p={3}>
@@ -128,6 +161,21 @@ const Transactions = () => {
             <MenuItem value="">All</MenuItem>
             <MenuItem value="income">Income</MenuItem>
             <MenuItem value="spending">Spending</MenuItem>
+          </Select>
+        </FormControl>
+        <FormControl sx={{ minWidth: 180 }}>
+          <InputLabel sx={{ color: colors.grey[800] }}>Sort By</InputLabel>
+          <Select
+            value={sortOption}
+            label="Sort By"
+            onChange={(e) => setSortOption(e.target.value)}
+            sx={{ color: colors.grey[800] }}
+          >
+            <MenuItem value="">None</MenuItem>
+            <MenuItem value="date_asc">Date (Oldest First)</MenuItem>
+            <MenuItem value="date_desc">Date (Newest First)</MenuItem>
+            <MenuItem value="amount_asc">Amount (Low to High)</MenuItem>
+            <MenuItem value="amount_desc">Amount (High to Low)</MenuItem>
           </Select>
         </FormControl>
       </Box>

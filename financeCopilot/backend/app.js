@@ -1,13 +1,13 @@
 const mongoose = require("mongoose");
 const express = require("express");
 const cors = require("cors");
-const session = require("express-session");;
+const session = require("express-session");
 const bodyParser = require("body-parser");
 const mongodbStore = require("connect-mongodb-session")(session);
-const mongodbAPI = "mongodb+srv://fempsoft:yjJCf6DA9aMTDrvR@financecopilot.oeh7dgr.mongodb.net/";
+const mongodbAPI =
+  "mongodb+srv://fempsoft:yjJCf6DA9aMTDrvR@financecopilot.oeh7dgr.mongodb.net/";
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
-
 
 const swaggerOptions = {
   swaggerDefinition: {
@@ -48,8 +48,8 @@ const loginRoute = require("./src/routes/login.js");
 const userPanelRoute = require("./src/routes/userPanel.js");
 const generatorRoute = require("./src/routes/generator.js");
 const copilotRoute = require("./src/routes/copilot.js");
-const transactionsRoute = require("./src/routes/transactions.js")
-const startWebSocketClient  = require('./src/services/stockSocket.js').startWebSocketClient; // Import WebSocket client
+const transactionsRoute = require("./src/routes/transactions.js");
+require("./src/services/stockSocket.js");
 app.use(bodyParser.urlencoded({ extended: false }));
 
 const corsOptions = {
@@ -62,19 +62,20 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(express.json());
 
-app.use(session({
-  secret: "fempsoft",
-  resave: false,
-  saveUninitialized: false,
-  store: store,
-  cookie: {
+app.use(
+  session({
+    secret: "fempsoft",
+    resave: false,
+    saveUninitialized: false,
+    store: store,
+    cookie: {
       maxAge: 24 * 60 * 60 * 1000,
       httpOnly: true,
       secure: false,
-      sameSite: 'lax',
-    }
-  }
-));
+      sameSite: "lax",
+    },
+  })
+);
 
 app.get("/", (req, res) => {
   res.redirect("/api-docs");
@@ -84,9 +85,8 @@ app.use("/userPanel", userPanelRoute);
 app.use("/generator", generatorRoute);
 app.use("/login", loginRoute);
 app.use("/copilot", copilotRoute);
-app.use('/transactions', transactionsRoute); 
+app.use("/transactions", transactionsRoute);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
-startWebSocketClient(); // ✅ Start WebSocket client on server boot
 
 mongoose
   .connect(mongodbAPI, {
@@ -95,7 +95,6 @@ mongoose
     tlsAllowInvalidHostnames: true,
   })
   .then((result) => {
-
     app.listen(8080, () => console.log("Server is running"));
   })
   .catch((err) => console.error("MongoDB connection errors:", err));

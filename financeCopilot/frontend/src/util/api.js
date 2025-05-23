@@ -251,8 +251,8 @@ export function getBudget() {
 
 async function saveStocks(stocks) {
   try {
-    const response = await axiosInstance.post(`/stocks/saveStocks`, {
-      stocks: stocks,
+    const response = await axiosInstance.post(`/userPanel/invest`, {
+      investData: stocks,
     });
     return response.data;
   } catch (error) {
@@ -272,9 +272,10 @@ export function saveUserStocks(stocks) {
 
 async function getStocks() {
   try {
-    const response = await axiosInstance.get(`/stocks/getStocks`);
-    return response.data;
-  } catch (error) {
+    const response = await axiosInstance.get(`/userPanel/getFields`);
+    if (Array.isArray(response.data)) {
+      return response.data.filter(item => item.name === "investment");
+    }  } catch (error) {
     console.error(
       "Error fetching stocks:",
       error.response ? error.response.data : error.message
@@ -329,4 +330,25 @@ async function resolveNewsUrl(url) {
 }
 export function resolveUrl(url) {
   return resolveNewsUrl(url);
+}
+
+async function getQuote(symbol) {
+  try {
+    const result = await axios.get(`https://finnhub.io/api/v1/quote`, {
+      params: { symbol, token: "d0o8uvpr01qu236163vgd0o8uvpr01qu23616400" },
+    });
+    return result.data;
+  } catch (error) {
+    console.error(
+      "Error fetching quote:",
+      error.response ? error.response.data : error.message
+    );
+    throw new Error(
+      "Failed to fetch quote: " +
+        (error.response ? error.response.data : error.message)
+    );
+  }
+}
+export function getStockQuote(symbol) {
+  return getQuote(symbol);
 }

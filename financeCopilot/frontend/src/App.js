@@ -10,6 +10,7 @@ import ConnectionStatus from "./components/ConnectionStatus";
 import LoadingAnimation from "./components/LoadingAnimation";
 import { LoginForm } from "./components/LoginForm";
 import AuthProvider, { AuthContext } from "./context/AuthContext";
+import { WebSocketProvider } from "./context/WebSocketContext";
 import Dashboard from "./scenes/dashboard/dashboard";
 // import Profile from "./scenes/profile/Profile";
 import Copilot from "./scenes/copilot/copilot";
@@ -89,9 +90,11 @@ function AppContent() {
 
 function App() {
   return (
+    <WebSocketProvider>
     <AuthProvider>
       <AppContent />
     </AuthProvider>
+    </WebSocketProvider>
   );
 }
 

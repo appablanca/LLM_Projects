@@ -76,6 +76,10 @@ Analyze the data and complete the following:
     "https://example.com/news2"
   ]
 }}
+
+#Language:
+-Use user’s language (e.g. Turkish if the user is Turkish).
+
 """
 
 class InvestmentAdvisorAgent(Agent):

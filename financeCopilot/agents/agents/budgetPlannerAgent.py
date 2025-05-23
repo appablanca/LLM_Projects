@@ -3,6 +3,13 @@ import requests
 import google.generativeai as genai
 from dotenv import load_dotenv
 import json
+from pymongo import MongoClient
+from sentence_transformers import SentenceTransformer
+import re
+
+
+
+
 
 from agents.baseAgent import Agent
 
@@ -10,6 +17,7 @@ from agents.baseAgent import Agent
 load_dotenv()
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 BACKEND_URL = os.getenv("BACKEND_URL")
+
 
 budgetPlannerAgentRole= """
     You are budgetPlannerAgent and your role is to analyze the user's financial data and provide insights on their spending habits.
@@ -88,6 +96,7 @@ budgetPlannerAgentRole= """
 class BudgetPlannerAgent(Agent):
     def __init__(self, name, role):
         super().__init__(name=name, role=role)
+        
         self.model = genai.GenerativeModel(
             model_name="gemini-2.0-flash",
             generation_config={
@@ -99,6 +108,9 @@ class BudgetPlannerAgent(Agent):
             },
             system_instruction=self.role,
         )
+        self.embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+        self.mongo_client = MongoClient(os.getenv("MONGO_URI"))
+        self.transactions_collection = self.mongo_client["financecopilot"]["transactions"]
 
     def get_user_data(self, user_id):
         try:
@@ -123,44 +135,122 @@ class BudgetPlannerAgent(Agent):
         except Exception as e:
             print(f"API error: {e}")
             return None
-
+   
     def calculate_income_and_spending(self, transactions):
+        # fonksiyon içinde ya da dosya başında olmalı
         def parse_amount(amt_str):
             try:
-                return float(amt_str.replace('.', '').replace(',', '.').replace(' TL', '').strip())
-            except:
+                # Sadece rakam, nokta, virgül, eksi işareti bırak
+                amt_str = re.sub(r"[^\d,.-]", "", amt_str)
+                # Noktaları kaldır (binlik ayırıcı), virgülü ondalık ayırıcı yap
+                amt_str = amt_str.replace(".", "").replace(",", ".")
+                return float(amt_str)
+            except Exception as e:
+                print(f"parse_amount error for '{amt_str}': {e}")
                 return 0.0
 
         income = 0.0
         spending = 0.0
+
         for txn in transactions:
-            amt = parse_amount(txn["amount"])
-            if txn["flow"] == "income":
+            amt = parse_amount(txn.get("amount", "0"))
+            flow = txn.get("flow", "").lower()
+
+            if flow == "income":
                 income += amt
-            elif txn["flow"] == "spending":
+            elif flow == "spending":
                 spending += amt
+
         return round(income, 2), round(spending, 2)
 
-    def generate_prompt(self, userInfo):
-        lines = []
-        lines.append("== User Financial Data ==\n")
-        lines.append(json.dumps(userInfo, indent=2, ensure_ascii=False))
-        return "\n".join(lines)
+      
+    def get_precomputed_embedding(self, text):
+        try:
+            embedding = self.embedding_model.encode(text)
+            return embedding.tolist()  # MongoDB’ye uyumlu olması için listeye çeviriyoruz
+        except Exception as e:
+            print(f"Embedding error: {e}")
+            return []
+ 
+    
+    
+
+      
+    def retrieve_relevant_transactions(self, query_text, user_id, top_k=8):
+        query_embedding = self.get_precomputed_embedding("Provide personalized financial improvement suggestions...")
+
+        results = self.transactions_collection.aggregate([
+            {
+                "$vectorSearch": {
+                    "index": "transactionVectorIndex",
+                    "path": "embedding",
+                    "queryVector": query_embedding,
+                    "numCandidates": 100,
+                    "limit": top_k,
+                    "filter": {"userId": user_id}
+                }
+            }
+        ])
+        return list(results)
+    
+    def initial_llm_analysis(self, user_info, financial_summary):
+      prompt = f"""
+== User Info ==
+{json.dumps(user_info, indent=2)}
+
+== Financial Summary ==
+{json.dumps(financial_summary, indent=2)}
+
+Based on this data, what are the top 3 financial improvement areas to focus on? Return a short list of keywords or categories like ["groceries", "rent", "entertainment"].
+"""
+      response = self.model.generate_content(prompt)
+      keywords = json.loads(response.text.strip())
+      return keywords  # örnek: ["groceries", "entertainment"]
+
+    def retrieve_contextual_transactions(self, focus_keywords, user_id, top_k=8):
+      all_results = []
+
+      for keyword in focus_keywords:
+        query_embedding = self.get_precomputed_embedding(keyword)
+
+        results = self.transactions_collection.aggregate([
+            {
+                "$vectorSearch": {
+                    "index": "transactionVectorIndex",
+                    "path": "embedding",
+                    "queryVector": query_embedding,
+                    "numCandidates": 100,
+                    "limit": top_k,
+                    "filter": {"userId": user_id}
+                }
+            }
+        ])
+        all_results.extend(list(results))
+      return all_results
+
+
+    # İsteğe bağlı: tekrar edenleri filtrele
+      return all_results
 
     def run_budget_analysis(self, user_id):
         userInfo = self.get_user_data(user_id)
         if not userInfo:
-            print("No data retrieved for user.")
+            print("❌ No data retrieved for user.")
             return None
+
+        print("✅ Raw userInfo:", json.dumps(userInfo, indent=2, ensure_ascii=False))
 
         spending_data = userInfo["spending_data"]
         transactions = spending_data["data"]["transactions"]
+
+        if not transactions:
+            print("⚠️ No transactions found!")
+        
 
         # Gelir ve harcamaları hesapla
         income, spending = self.calculate_income_and_spending(transactions)
         net_difference = round(income - spending, 2)
 
-        # Kullanıcı bilgilerini güncelle
         userInfo["user_info"]["income"] = income
         userInfo["financial_summary"] = {
             "monthly_income": income,
@@ -169,40 +259,38 @@ class BudgetPlannerAgent(Agent):
             "summary_comment": "Your monthly budget is in deficit." if net_difference < 0 else "You are saving money this month."
         }
 
-        # === Yeni Improvement Recommendations Mantığı ===
-        recommendations = []
-        user_data = userInfo["user_info"]
+        print("🧾 Financial Summary Computed:", json.dumps(userInfo["financial_summary"], indent=2))
 
-        rent = float(user_data.get("rent", 0))
-        savings = float(user_data.get("savings", 0))
+        # Anahtar kelimeleri bul
+        focus_keywords = self.initial_llm_analysis(userInfo["user_info"], userInfo["financial_summary"])
+        print("🔎 LLM-suggested focus keywords:", focus_keywords)
 
-        # Sabit gider kontrolü
-        fixed_expense_ratio = (rent / income) * 100 if income else 0
-        if fixed_expense_ratio > 50:
-            recommendations.append(
-                f"Your rent consumes {fixed_expense_ratio:.1f}% of your income. Consider finding more affordable housing or increasing income sources."
-            )
+        # Vektör araması ile ilgili işlemler
+        relevant_txns = self.retrieve_contextual_transactions(focus_keywords, user_id=user_id)
+        print(f"📥 Retrieved {len(relevant_txns)} relevant transactions from vector DB")
 
-        # Tasarruf kontrolü
-        savings_ratio = (savings / income) * 100 if income else 0
-        if savings_ratio < 10:
-            recommendations.append(
-                f"Your savings rate is only {savings_ratio:.1f}%. Aim to save at least 20% of your income by automating savings at the start of each month."
-            )
+        # Prompt oluşturuluyor
+        prompt = f"""
+== User Info ==
+{json.dumps(userInfo["user_info"], indent=2)}
 
-        # Genel iyileştirme önerileri
-        recommendations.append("Track all expenses using an app or a simple spreadsheet to better understand your spending habits.")
-        recommendations.append("Review monthly subscriptions and cancel any unused or non-essential services.")
-        recommendations.append("Set specific monthly limits for categories like dining out, entertainment, or shopping.")
+== Financial Summary ==
+{json.dumps(userInfo["financial_summary"], indent=2)}
 
-        userInfo["improvement_recommendations"] = recommendations
+== Relevant Transactions (via Vector Search) ==
+{json.dumps(relevant_txns, indent=2)}
 
-        # LLM'e gönderilecek prompt
-        prompt = self.generate_prompt(userInfo)
-        print("\n== Prompt Sent to Gemini ==\n")
-        print(prompt)
-        print("\n== Agent Response ==\n")
-        response = self.model.generate_content(prompt)
+You are a financial analysis agent...
+...
+"""
+        print("📝 Final Prompt Sent to LLM:\n", prompt[:1500], "...\n[truncated]")
+        print(f"Transactions count: {len(transactions)}")
+        print(f"Sample transaction: {transactions[0] if transactions else 'No transactions'}")
 
-        # Dönüş
-        return json.loads(response.text.strip())
+        try:
+            response = self.model.generate_content(prompt)
+            print("✅ Raw LLM Response:\n", response.text[:1500], "...\n[truncated]")
+            return json.loads(response.text.strip())
+        except Exception as e:
+            print("❌ LLM error:", e)
+            return {"error": "LLM failed to return valid JSON."}

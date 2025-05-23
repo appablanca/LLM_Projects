@@ -74,27 +74,56 @@ const Copilot = () => {
 
       let botMsg;
       if (response?.success && response?.response) {
-        // Handle stock suggestions
+        const res = response.response;
+
         if (
-          response.response.stock_suggestions &&
-          Array.isArray(response.response.stock_suggestions)
+          Array.isArray(res.recommendations) &&
+          res.recommendations.length > 0
         ) {
-          setSuggestedStocks(response.response.stock_suggestions);
+          const tickers = res.recommendations
+            .map((rec) => rec.ticker)
+            .filter((ticker) => typeof ticker === "string");
+
+          if (tickers.length > 0) {
+            setSuggestedStocks(tickers);
+            setShowTrackDialog(true);
+          }
+
+          const detailedAnalyses = res.recommendations
+            .map((rec) => {
+              const t = rec.ticker;
+              const analysis = rec.detailed_analysis;
+              if (t && analysis) {
+                return `${t}\n${analysis}`;
+              }
+              return null;
+            })
+            .filter(Boolean)
+            .join("\n\n");
+
+          botMsg = detailedAnalyses || tickers.map((t) => `**${t}**`).join(", ");
+        } else if (res.natural_summary) {
+          botMsg = res.natural_summary;
+        } else {
+          botMsg = JSON.stringify(res, null, 2);
+        }
+
+        if (
+          res.portfolio_allocation &&
+          Array.isArray(res.portfolio_allocation)
+        ) {
+          setSuggestedStocks(res.portfolio_allocation);
           setShowTrackDialog(true);
         }
-        // Check if the response contains transaction data
-        if (
-          response.response.transactions &&
-          Array.isArray(response.response.transactions)
-        ) {
+
+        if (res.transactions && Array.isArray(res.transactions)) {
           try {
-            // Save transactions to database
-            const saveResponse = await saveTransactions(
-              response.response.transactions,
-              response.response.category_totals,
-              response.response.card_limit
+            await saveTransactions(
+              res.transactions,
+              res.category_totals,
+              res.card_limit
             );
-            toast.success("Transactions saved successfully!", {
+            toast.success("Transactions saved to the database successfully!", {
               position: "top-right",
               autoClose: 5000,
               hideProgressBar: false,
@@ -116,22 +145,13 @@ const Copilot = () => {
             });
           }
         }
-        botMsg = JSON.stringify(response.response, null, 2);
 
-        if (Array.isArray(response.response.URLs)) {
+        if (Array.isArray(res.URLs)) {
           const resolvedUrls = await Promise.all(
-            response.response.URLs.map(async (url) => {
+            res.URLs.map(async (url) => {
               try {
                 const res = await resolveUrl(url);
-                if (res && res.finalUrl) {
-                  return res.finalUrl;
-                } else {
-                  console.warn(
-                    "Unexpected response from resolveUrl:",
-                    JSON.stringify(res)
-                  );
-                  return url;
-                }
+                return res?.finalUrl || url;
               } catch (err) {
                 console.error("resolveUrl threw:", JSON.stringify(err));
                 return url;
@@ -139,7 +159,6 @@ const Copilot = () => {
             })
           );
           setSources(resolvedUrls);
-          console.log("Sources:", resolvedUrls);
         } else {
           setSources(null);
         }
@@ -336,7 +355,14 @@ const Copilot = () => {
                   key={index}
                   title={
                     <Box sx={{ width: 360, height: 200, overflow: "hidden" }}>
-                      <Box sx={{ transform: "scale(0.4)", transformOrigin: "top left", width: "900px", height: "500px" }}>
+                      <Box
+                        sx={{
+                          transform: "scale(0.4)",
+                          transformOrigin: "top left",
+                          width: "900px",
+                          height: "500px",
+                        }}
+                      >
                         <iframe
                           src={url}
                           width="100%"
@@ -445,7 +471,7 @@ const Copilot = () => {
         </Box>
       </Box>
       <Dialog open={showTrackDialog} onClose={() => setShowTrackDialog(false)}>
-        <Box sx={{ p: 3 }}>
+        <Box sx={{ p: 3, backgroundColor: colors.primary[300] }}>
           <Typography variant="h6" sx={{ mb: 2 }}>
             Do you want to track the following stocks?
           </Typography>
@@ -457,6 +483,7 @@ const Copilot = () => {
               color="primary"
               onClick={async () => {
                 try {
+                  console.log("Saving suggested stocks:", suggestedStocks);
                   await saveUserStocks(suggestedStocks);
                   toast.success("Selected stocks are now being tracked!");
                 } catch (error) {
