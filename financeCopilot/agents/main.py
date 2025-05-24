@@ -83,28 +83,29 @@ def handle_user_input():
                     }), 400
 
             elif agent_key == "lifeplanneragent":
-                result = asyncio.run(agents[agent_key].get_life_plan(user_text, user))
+                agent_result = asyncio.run(agents[agent_key].get_life_plan(user_text, user))
                 orchestrator.conversation_history.append(
-                    {"user_input": user_text, "agent_key": agent_key, "agent_response": result}
+                    {"user_input": user_text, "agent_key": agent_key, "agent_response": agent_result}
                 )
-                return jsonify({"success": True, "response": result})
+                final_response = orchestrator.generate_final_response(user_text, agent_result)
+                return jsonify({"success": True, "response": final_response})
 
             elif agent_key == "investmentadvisoragent":
-                result = asyncio.run(agents[agent_key].get_financal_advise(user_text,user))
+                result = asyncio.run(agents[agent_key].get_financal_advise(user_text, user))
                 orchestrator.conversation_history.append(
                     {"user_input": user_text, "agent_key": agent_key, "agent_response": result}
                 )
-                return jsonify({"success": True, "response": result})
+                final_response = orchestrator.generate_final_response(user_text, result)
+                return jsonify({"success": True, "response": final_response})
 
             else:
-                result = agents[agent_key].generate_response(user_text)
+                agent_result = agents[agent_key].generate_response(user_text)
                 orchestrator.conversation_history.append(
-                    {"user_input": user_text, "agent_key": agent_key, "agent_response": result}
+                    {"user_input": user_text, "agent_key": agent_key, "agent_response": agent_result}
                 )
-                return jsonify({"success": True, "response": result})
+                final_response = orchestrator.generate_final_response(user_text, agent_result)
+                return jsonify({"success": True, "response": final_response})
 
-        # fallback: bilinmeyen agent
-        print("⚠️ Unknown agent key:", agent_key)
         result = agents["normalchatagent"].generate_response(user_text)
         orchestrator.conversation_history.append(
             {"user_input": user_text, "agent_key": agent_key, "agent_response": result}

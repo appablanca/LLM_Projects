@@ -3,7 +3,7 @@ import os
 import json
 import httpx
 from dotenv import load_dotenv
-import numpy as np  # ensure numpy is imported at the top
+import numpy as np  
 import google.generativeai as genai
 from financeAgent.newsGetter import NewsAnalyzer
 load_dotenv()
