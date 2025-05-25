@@ -37,9 +37,6 @@ budget_planner = BudgetPlannerAgent("BudgetPlannerAgent", budgetPlannerAgentRole
 
 @app.route("/chat", methods=["POST", "OPTIONS"])
 def handle_user_input():
-    """
-    Chat bot endpoint to handle user input and return a response.
-    """
     if request.method == "OPTIONS":
         response = jsonify({"status": "ok"})
         response.headers.add("Access-Control-Allow-Origin", "*")
@@ -55,62 +52,59 @@ def handle_user_input():
         if not user_text and not uploaded_file:
             return jsonify({"success": False, "message": "Message or file is required"}), 400
 
-        agent_key = orchestrator.get_agent_key(user_text).lower()
-        print(f"📎 Uploaded file: {uploaded_file.filename if uploaded_file else 'None'}")
+        # Step 1: Get orchestrator job decision
+        orchestrator_decision = orchestrator.model.generate_content(user_text)
+        print(f"🧠 Orchestrator decision: {orchestrator_decision.text}")
 
-        if agent_key in agents:
-            print(f"Selected Agent: {agent_key}")
+        decision_json = json.loads(orchestrator_decision.text)
 
-            if agent_key == "expenseanalyzeragent":
+        # Handle Job 1: Routing
+        if decision_json["job"] == "routing":
+            selected_agent_key = decision_json["selected_agent"]
+
+            if selected_agent_key not in agents:
+                return jsonify({"success": False, "message": f"Unknown agent: {selected_agent_key}"}), 400
+
+            print(f"📬 Routing to: {selected_agent_key}")
+            agent = agents[selected_agent_key]
+
+            # Handle file input (only valid for expenseAnalyzerAgent)
+            if selected_agent_key == "expenseanalyzeragent":
                 if uploaded_file and uploaded_file.filename:
-                    try:
-                        result = agents[agent_key].categorize_pdf(uploaded_file)
-                        orchestrator.conversation_history.append(
-                            {"user_input": user_text, "agent_key": agent_key, "agent_response": result}
-                        )
-                        return jsonify({"success": True, "response": result})
-                    except Exception as e:
-                        print(f"🚫 Error processing file: {str(e)}")
-                        return jsonify({
-                            "success": False,
-                            "message": "Error processing the file",
-                            "error": str(e),
-                        }), 500
+                    result = agent.categorize_pdf(uploaded_file)
                 else:
-                    return jsonify({
-                        "success": False,
-                        "message": "Please upload a PDF file for analysis",
-                    }), 400
+                    return jsonify({"success": False, "message": "Please upload a PDF file for analysis"}), 400
 
-            elif agent_key == "lifeplanneragent":
-                agent_result = asyncio.run(agents[agent_key].get_life_plan(user_text, user))
-                orchestrator.conversation_history.append(
-                    {"user_input": user_text, "agent_key": agent_key, "agent_response": agent_result}
-                )
-                final_response = orchestrator.generate_final_response(user_text, agent_result)
-                return jsonify({"success": True, "response": final_response})
+            # Handle async agents
+            elif selected_agent_key == "lifeplanneragent":
+                result = asyncio.run(agent.get_life_plan(user_text, user))
 
-            elif agent_key == "investmentadvisoragent":
-                result = asyncio.run(agents[agent_key].get_financal_advise(user_text, user))
-                orchestrator.conversation_history.append(
-                    {"user_input": user_text, "agent_key": agent_key, "agent_response": result}
-                )
-                final_response = orchestrator.generate_final_response(user_text, result)
-                return jsonify({"success": True, "response": final_response})
+            elif selected_agent_key == "investmentadvisoragent":
+                result = asyncio.run(agent.get_financal_advise(user_text, user))
 
+            # Handle synchronous agents
             else:
-                agent_result = agents[agent_key].generate_response(user_text)
-                orchestrator.conversation_history.append(
-                    {"user_input": user_text, "agent_key": agent_key, "agent_response": agent_result}
-                )
-                final_response = orchestrator.generate_final_response(user_text, agent_result)
-                return jsonify({"success": True, "response": final_response})
+                result = agent.generate_response(user_text)
 
-        result = agents["normalchatagent"].generate_response(user_text)
-        orchestrator.conversation_history.append(
-            {"user_input": user_text, "agent_key": agent_key, "agent_response": result}
-        )
-        return jsonify({"success": True, "response": result})
+            # Save history
+            orchestrator.conversation_history.append({
+                "user_input": user_text,
+                "agent_key": selected_agent_key,
+                "agent_response": result
+            })
+
+            # Step 2: Get final natural language response from orchestrator
+            final_response = orchestrator.generate_final_response(user_text, result)
+            json_final_response = json.loads(final_response)
+            return jsonify({"success": True, "response": json_final_response["natural_response"]})
+
+
+        # Handle Job 2: Already in natural language
+        elif decision_json["job"] == "natural_response":
+            return jsonify({"success": True, "response": decision_json["natural_response"]})
+
+        else:
+            return jsonify({"success": False, "message": "Invalid job type from orchestrator"}), 400
 
     except Exception as e:
         print(f"Error in handle_user_input: {e}")
@@ -119,7 +113,6 @@ def handle_user_input():
             "message": "An error occurred while processing your request",
             "error": str(e),
         }), 500
-
 
 @app.route("/budget-analysis", methods=["POST", "OPTIONS"])
 def handle_budget_analysis():
