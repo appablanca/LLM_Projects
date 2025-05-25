@@ -43,10 +43,15 @@ const Copilot = () => {
   const [trackingStep, setTrackingStep] = useState(null);
   const [stepHistory, setStepHistory] = useState([]);
   const [displayedSteps, setDisplayedSteps] = useState([]);
-  const stepIndexRef = useRef(0);
+  // Custom deduplicated steps state
+  const [customStepHistory, setCustomStepHistory] = useState([]);
+  const lastDisplayedIndexRef = useRef(0);
   const [trackingActive, setTrackingActive] = useState(false);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  // New state and ref for delayed message logic
+  const [readyToShowFinalMessage, setReadyToShowFinalMessage] = useState(false);
+  const delayedBotMsgRef = useRef("");
 
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -66,19 +71,30 @@ const Copilot = () => {
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch("http://localhost:5001/job-status/static-track-id");
+        const res = await fetch(
+          "http://localhost:5001/job-status/static-track-id"
+        );
         const data = await res.json();
-
+        console.log("Polling data:", data); // Debug log
         if (data?.success) {
           if (data.status?.step) {
             setTrackingStep(data.status.step);
           }
           if (Array.isArray(data.status?.steps)) {
-            setStepHistory(data.status.steps);
+            // Use deduplicated step history
+            setCustomStepHistory((prev) => {
+              const newSteps = data.status.steps.filter(
+                (step) => !prev.includes(step)
+              );
+              return newSteps.length > 0 ? [...prev, ...newSteps] : prev;
+            });
           }
         }
 
-        if (data?.status?.status === "done" || data?.status?.status === "failed") {
+        if (
+          data?.status?.status === "done" ||
+          data?.status?.status === "failed"
+        ) {
           clearInterval(interval);
           setTrackingStep(null);
           setTrackingActive(false);
@@ -86,31 +102,75 @@ const Copilot = () => {
       } catch (err) {
         console.error("Polling error:", err);
       }
-    }, 1500);
+    }, 750);
 
     return () => clearInterval(interval);
   }, [trackingActive]);
 
-  // Animate step display when stepHistory updates
+  // Animate step display when customStepHistory updates (only show new steps, remember last displayed index)
   useEffect(() => {
-    if (!stepHistory || stepHistory.length === 0) return;
+    if (!customStepHistory || customStepHistory.length === 0) return;
 
     const interval = setInterval(() => {
       setDisplayedSteps((prev) => {
-        const nextIndex = stepIndexRef.current;
-        if (nextIndex < stepHistory.length) {
-          const updated = [...prev, stepHistory[nextIndex]];
-          stepIndexRef.current += 1;
-          return updated;
+        if (lastDisplayedIndexRef.current < customStepHistory.length) {
+          const nextStep = customStepHistory[lastDisplayedIndexRef.current];
+          lastDisplayedIndexRef.current += 1;
+
+          const updatedSteps = [...prev, nextStep];
+
+          console.log("🧱 Showing step:", nextStep);
+
+          if (
+            nextStep
+              .replace(/🧠|\s/g, "")
+              .toLowerCase()
+              .includes("constructioncomplete.")
+          ) {
+            console.log(
+              "✅ Construction complete detected. Will trigger final message."
+            );
+            setReadyToShowFinalMessage(true);
+          }
+
+          return updatedSteps;
         } else {
           clearInterval(interval);
           return prev;
         }
       });
-    }, 1200);
+    }, 800);
 
     return () => clearInterval(interval);
-  }, [stepHistory]);
+  }, [customStepHistory]);
+
+  // Show delayed bot message when ready and message exists
+  useEffect(() => {
+    
+    if (readyToShowFinalMessage && delayedBotMsgRef.current) {
+      console.log("💬 Displaying final bot message:", delayedBotMsgRef.current);
+      setDisplayedSteps([]);
+      setCustomStepHistory([]);
+      setMessages((prev) => {
+        const updated = [
+          ...prev,
+          {
+            sender: "ai",
+            text: delayedBotMsgRef.current || "No message generated.",
+          },
+        ];
+        // Add scroll after DOM updates and clear delayedBotMsgRef
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+          delayedBotMsgRef.current = "";
+        }, 100);
+        return updated;
+      });
+      setTrackingStep(null);
+      setTrackingActive(false);
+      setReadyToShowFinalMessage(false);
+    }
+  }, [readyToShowFinalMessage]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -125,16 +185,15 @@ const Copilot = () => {
     setLoading(true);
     scrollToBottom();
 
-    // Insert delayedBotMsg variable
-    let delayedBotMsg = "";
+    // Use delayedBotMsgRef for delayed message
+    delayedBotMsgRef.current = "";
 
     try {
       setTrackingActive(true);
       setStepHistory([]);
       setDisplayedSteps([]);
-      stepIndexRef.current = 0;
       const response = await sendCopilotMessage(input, selectedFile);
-      console.log("Response from backend:", response); // Debug log
+      console.log("Response from backend:", response);
 
       let botMsg;
       if (response?.success && response?.response) {
@@ -248,8 +307,8 @@ ${res.lifePlan.recommendations.map((r) => `- ${r}`).join("\n")}
         setSources(null);
       }
 
-      // Instead of sending the message here, assign to delayedBotMsg
-      delayedBotMsg = botMsg;
+      // Instead of sending the message here, assign to delayedBotMsgRef
+      delayedBotMsgRef.current = botMsg;
     } catch (error) {
       if (error instanceof Error) {
         console.error("Error in handleSendMessage:", error.message);
@@ -268,12 +327,7 @@ ${res.lifePlan.recommendations.map((r) => `- ${r}`).join("\n")}
     } finally {
       setLoading(false);
       setSelectedFile(null);
-      // After try, in finally, send delayedBotMsg with a delay if it exists
-      if (delayedBotMsg) {
-        setTimeout(() => {
-          setMessages((prev) => [...prev, { sender: "ai", text: delayedBotMsg }]);
-        }, stepHistory.length * 1200 + 500);
-      }
+      // No longer send delayedBotMsg here; handled in useEffect
     }
   };
 
@@ -320,6 +374,8 @@ ${res.lifePlan.recommendations.map((r) => `- ${r}`).join("\n")}
           borderRadius:
             msg.sender === "user" ? "18px 18px 0 18px" : "18px 18px 18px 0",
           maxWidth: "70%",
+          maxHeight: "300px", // EKLENECEK
+          overflowY: "auto", // EKLENECEK
         }}
       >
         <Typography sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
@@ -414,7 +470,10 @@ ${res.lifePlan.recommendations.map((r) => `- ${r}`).join("\n")}
         >
           {messages.map(renderMessage)}
           {displayedSteps.map((step, idx) => (
-            <Box key={idx} sx={{ display: "flex", justifyContent: "flex-start", px: 2 }}>
+            <Box
+              key={idx}
+              sx={{ display: "flex", justifyContent: "flex-start", px: 2 }}
+            >
               <Typography variant="body2" color="text.secondary">
                 🧠 {step}
               </Typography>
@@ -599,5 +658,3 @@ ${res.lifePlan.recommendations.map((r) => `- ${r}`).join("\n")}
 };
 
 export default Copilot;
-
-  

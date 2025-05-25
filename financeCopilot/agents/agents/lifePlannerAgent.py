@@ -86,6 +86,11 @@ NEVER:
 •⁠  Plan should include inflation and current price data in calculations.
 •⁠  Use user’s language (e.g. Turkish if the user is Turkish).
 •⁠  Be clear and realistic.
+
+   Important Instructions:
+    - Do NOT leave fields like 'goal', 'estimatedCost', 'timeline', or 'monthlyPlan' vague or generic.
+    - Each field must be detailed, specific, and consistent with the user's income and macroeconomic data.
+    - Use a realistic tone. Avoid generic phrases like “This plan helps you improve your finances.”
 """
 
 class LifePlannerAgent(Agent):
@@ -247,50 +252,6 @@ User Profile:
             {profile_template}
             {macro_info}
             """
-            # Prompt'a özel yüzdesel dağılım isteği ekle
-            
-            prompt += """
-    Your response must be in the following JSON format and respond in the same language the user asked the question:
-
-    {{
-      "askingQuestion": false,
-      "lifePlan": {{
-        "goal": "string – Clearly state the user's objective (e.g., Buy a used C-segment car in 2 years)",
-        "estimatedCost": "string – Estimate current cost in TRY (e.g., 900,000 – 1,100,000 TRY)",
-        "timeline": "string – A realistic time-based path to achieve the goal (e.g., 'Start saving now, reach target by Q2 2026')",
-        "monthlyPlan": "string – A clear, step-by-step financial plan including monthly or quarterly savings, spending adjustments, and key decisions",
-        "generalSummeryOfPlan": "string – High-level summary of the approach and what the user will achieve by following it",
-        "recommendations": ["string", "string", "..."]  // At least 5 detailed, realistic suggestions
-      }}
-    }}
-
-    Important Instructions:
-    - Do NOT leave fields like 'goal', 'estimatedCost', 'timeline', or 'monthlyPlan' vague or generic.
-    - Each field must be detailed, specific, and consistent with the user's income and macroeconomic data.
-    - Use a realistic tone. Avoid generic phrases like “This plan helps you improve your finances.”
-
-    Example output:
-
-    {{
-      "askingQuestion": false,
-      "lifePlan": {{
-        "goal": "Buy a 2nd-hand C-segment car within 2 years",
-        "estimatedCost": "1,000,000 – 1,200,000 TRY",
-        "timeline": "24 months – save 30,000 TRY per month, adjust expenses, purchase in Q2 2026",
-        "monthlyPlan": "Months 1–3: Reduce rent by moving to a cheaper area, saving 2,000 TRY/month. Months 4–12: Save 30,000 TRY/month while minimizing entertainment and transport costs. Month 13–24: Maintain same savings rate. At the end of 24 months, you will have approx. 1,000,000 TRY.",
-        "generalSummeryOfPlan": "This plan focuses on disciplined savings and optimizing your current expenses to help you buy a mid-range car within 2 years.",
-        "recommendations": [
-          "Current rent is 7.69% of income (5,000 TRY). If needed, increase to 30% (up to 19,500 TRY) to improve living conditions.",
-          "Savings target is 30,000 TRY/month. You are currently saving 20,000 TRY. Reduce transport and entertainment expenses to meet this target.",
-          "Transportation: Switch from taxi to metro/bus to save up to 3,000 TRY/month.",
-          "Consider buying models like Toyota Corolla (2021+), Renault Megane, or Fiat Egea with low mileage.",
-          "Track spending weekly using a budgeting app to stay disciplined and adjust based on monthly surplus."
-        ]
-      }}
-    }}
-    """
-            
-
 
             print(f"📎 Prompt sent to model:\n{prompt}")
             job_status["static-track-id"].setdefault("steps", []).append("Calling Agent to generate financial life plan...")
@@ -305,7 +266,7 @@ User Profile:
             goal = parsed_response.get("lifePlan", {}).get("goal", "").lower()
 
             if "araba" in goal or "car" in goal or "otomobil" in goal:
-                vehicle_data = self.get_vehicle_options(make="Renault", model="Megane")  # örnek veri
+                vehicle_data = self.get_vehicle_options(make="Renault", model="Megane")  
                 job_status["static-track-id"].setdefault("steps", []).append("Fetching vehicle suggestions...")
                 job_status["static-track-id"]["step"] = "Fetching vehicle suggestions..."
                 vehicle_section = "Örnek Araçlar:\n" + "\n".join(
@@ -322,9 +283,9 @@ User Profile:
     )
                 parsed_response["lifePlan"]["recommendations"].append(housing_section)
 
-            job_status["static-track-id"].setdefault("steps", []).append("Life plan construction complete.")
-            job_status["static-track-id"]["step"] = "Life plan construction complete."
-# 🔚 Artık enriched JSON dönüyorsun:
+            job_status["static-track-id"].setdefault("steps", []).append("Construction complete.")
+            job_status["static-track-id"]["step"] = "Construction complete."
+
             return parsed_response
 
 

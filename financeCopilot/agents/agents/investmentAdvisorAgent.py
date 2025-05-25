@@ -196,7 +196,7 @@ News URL: {", ".join(news_summary.get("URL", []))}
 
         job_status["static-track-id"].setdefault("steps", []).append("Stock summary complete. Preparing final response...")
         job_status["static-track-id"]["step"] = "Stock summary complete. Preparing final response..."
-
+        
         return summary_lines
 
     async def get_financal_advise(self, user_message,user):
@@ -230,4 +230,6 @@ News URL: {", ".join(news_summary.get("URL", []))}
         job_status["static-track-id"]["step"] = "Generating investment advice using Gemini..."
         print(prompt)
         response = self.generate_response(prompt)
+        job_status["static-track-id"].setdefault("steps", []).append("Construction complete.")
+        job_status["static-track-id"]["step"] = "Construction complete."
         return json.loads(response)
