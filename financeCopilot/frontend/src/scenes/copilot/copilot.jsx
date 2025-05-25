@@ -40,6 +40,7 @@ const Copilot = () => {
   const [suggestedStocks, setSuggestedStocks] = useState([]);
   const [sources, setSources] = useState(null);
   const [showSources, setShowSources] = useState(false);
+  const [trackingStep, setTrackingStep] = useState(null);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -53,6 +54,31 @@ const Copilot = () => {
         text: "Hello! I'm your Finance Copilot. How can I help you today?",
       },
     ]);
+  }, []);
+
+  // Polling static job status for tracking step
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:5001/job-status/static-track-id`
+        );
+        const data = await res.json();
+
+        if (data?.success && data.status?.step) {
+          setTrackingStep(data.status.step);
+        }
+
+        if (data?.status?.status === "done" || data?.status?.status === "failed") {
+          clearInterval(interval);
+          setTrackingStep(null);
+        }
+      } catch (err) {
+        console.error("Polling error:", err);
+      }
+    }, 1500);
+
+    return () => clearInterval(interval);
   }, []);
 
   const scrollToBottom = () => {
@@ -101,7 +127,8 @@ const Copilot = () => {
             .filter(Boolean)
             .join("\n\n");
 
-          botMsg = detailedAnalyses || tickers.map((t) => `**${t}**`).join(", ");
+          botMsg =
+            detailedAnalyses || tickers.map((t) => `**${t}**`).join(", ");
         } else if (res.natural_summary) {
           botMsg = res.natural_summary;
         } else {
@@ -114,6 +141,22 @@ const Copilot = () => {
         ) {
           setSuggestedStocks(res.portfolio_allocation);
           setShowTrackDialog(true);
+        }
+
+        if (res.lifePlan) {
+          botMsg = `🎯 HEDEF: ${res.lifePlan.goal}
+
+💰 Estimated COST : ${res.lifePlan.estimatedCost}
+💼 GENERAL SUMMERY OF PLAN : ${res.lifePlan.generalSummeryOfPlan}
+
+📆 TIMELINE : ${res.lifePlan.timeline}
+
+📊 MONTHLY PLAN:
+${res.lifePlan.monthlyPlan}
+
+✅ RECOMMENDATIONS:
+${res.lifePlan.recommendations.map((r) => `- ${r}`).join("\n")}
+          `;
         }
 
         if (res.transactions && Array.isArray(res.transactions)) {
@@ -325,6 +368,13 @@ const Copilot = () => {
           }}
         >
           {messages.map(renderMessage)}
+          {trackingStep && (
+            <Box sx={{ display: "flex", justifyContent: "flex-start", px: 2 }}>
+              <Typography variant="body2" color="text.secondary">
+                🧠 {trackingStep} 
+              </Typography>
+            </Box>
+          )}
           {loading && (
             <Box sx={{ display: "flex", justifyContent: "center", py: 1 }}>
               <CircularProgress size={24} />

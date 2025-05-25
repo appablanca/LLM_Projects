@@ -10,8 +10,11 @@ import asyncio
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
+import uuid
 
 app = Flask(__name__)
+
+job_status = {}
 
 # More permissive CORS configuration
 CORS(
@@ -53,9 +56,13 @@ def handle_user_input():
         user = request.form.get("user")
 
         if not user_text and not uploaded_file:
-            return jsonify({"success": False, "message": "Message or file is required"}), 400
+            return jsonify({"success": False, "track_id": None, "message": "Message or file is required"}), 400
+
+        track_id = "static-track-id"
+        job_status[track_id] = {"status": "processing", "step": "routing to agent", "user_input": user_text}
 
         agent_key = orchestrator.get_agent_key(user_text).lower()
+        job_status[track_id]["step"] = f"agent routing: {agent_key}"
         print(f"📎 Uploaded file: {uploaded_file.filename if uploaded_file else 'None'}")
 
         if agent_key in agents:
@@ -64,44 +71,56 @@ def handle_user_input():
             if agent_key == "expenseanalyzeragent":
                 if uploaded_file and uploaded_file.filename:
                     try:
+                        job_status[track_id]["step"] = "running expense analyzer agent"
                         result = agents[agent_key].categorize_pdf(uploaded_file)
                         orchestrator.conversation_history.append(
                             {"user_input": user_text, "agent_key": agent_key, "agent_response": result}
                         )
-                        return jsonify({"success": True, "response": result})
+                        job_status[track_id].update({"status": "done", "step": "completed", "response": result})
+                        return jsonify({"success": True, "track_id": track_id, "response": result})
                     except Exception as e:
                         print(f"🚫 Error processing file: {str(e)}")
+                        job_status[track_id].update({"status": "failed", "step": "error", "error": str(e)})
                         return jsonify({
                             "success": False,
+                            "track_id": track_id,
                             "message": "Error processing the file",
                             "error": str(e),
                         }), 500
                 else:
+                    job_status[track_id].update({"status": "failed", "step": "waiting for PDF", "error": "No file uploaded"})
                     return jsonify({
                         "success": False,
+                        "track_id": track_id,
                         "message": "Please upload a PDF file for analysis",
                     }), 400
 
             elif agent_key == "lifeplanneragent":
+                job_status[track_id]["step"] = "running life planner agent"
                 result = asyncio.run(agents[agent_key].get_life_plan(user_text, user))
                 orchestrator.conversation_history.append(
                     {"user_input": user_text, "agent_key": agent_key, "agent_response": result}
                 )
-                return jsonify({"success": True, "response": result})
+                job_status[track_id].update({"status": "done", "step": "completed", "response": result})
+                return jsonify({"success": True, "track_id": track_id, "response": result})
 
             elif agent_key == "investmentadvisoragent":
+                job_status[track_id]["step"] = "running investment advisor agent"
                 result = asyncio.run(agents[agent_key].get_financal_advise(user_text,user))
                 orchestrator.conversation_history.append(
                     {"user_input": user_text, "agent_key": agent_key, "agent_response": result}
                 )
-                return jsonify({"success": True, "response": result})
+                job_status[track_id].update({"status": "done", "step": "completed", "response": result})
+                return jsonify({"success": True, "track_id": track_id, "response": result})
 
             else:
+                job_status[track_id]["step"] = f"running {agent_key}"
                 result = agents[agent_key].generate_response(user_text)
                 orchestrator.conversation_history.append(
                     {"user_input": user_text, "agent_key": agent_key, "agent_response": result}
                 )
-                return jsonify({"success": True, "response": result})
+                job_status[track_id].update({"status": "done", "step": "completed", "response": result})
+                return jsonify({"success": True, "track_id": track_id, "response": result})
 
         # fallback: bilinmeyen agent
         print("⚠️ Unknown agent key:", agent_key)
@@ -109,12 +128,15 @@ def handle_user_input():
         orchestrator.conversation_history.append(
             {"user_input": user_text, "agent_key": agent_key, "agent_response": result}
         )
-        return jsonify({"success": True, "response": result})
+        job_status[track_id].update({"status": "done", "step": "fallback to normal agent", "response": result})
+        return jsonify({"success": True, "track_id": track_id, "response": result})
 
     except Exception as e:
         print(f"Error in handle_user_input: {e}")
+        job_status[track_id].update({"status": "failed", "step": "error", "error": str(e)})
         return jsonify({
             "success": False,
+            "track_id": track_id,
             "message": "An error occurred while processing your request",
             "error": str(e),
         }), 500
@@ -178,7 +200,21 @@ def get_embeddings():
             "message": "Internal server error",
             "error": str(e)
         }), 500
-    
+
+# New endpoint: Get job status
+@app.route("/job-status/<job_id>", methods=["GET"])
+def get_job_status(job_id):
+    job = job_status.get(job_id)
+    if not job:
+        return jsonify({
+            "success": True,
+            "status": {
+                "status": "idle",
+                "step": "waiting for input"
+            }
+        })
+    return jsonify({"success": True, "status": job})
+
 if __name__ == "__main__":
     print("Starting Flask server on port 5001...")
     app.run(debug=True, port=5001, host="0.0.0.0")
