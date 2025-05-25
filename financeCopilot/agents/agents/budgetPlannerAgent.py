@@ -44,12 +44,17 @@ budgetPlannerAgentRole = """
     "income": 12000,
     "savings": 5000
   },    
-  "financial_summary": { (This section is calculated by the system and given to you)
-    "monthly_income_calculated_by_transaction": 12000 
-    "total_spending_calculated_by_transaction": 13500,
-    "net_difference_calculated_by_transaction": -1500,
-    "summary_comment": "Your monthly budget is in deficit."
+ "financial_summary": {
+  "2025-03": {
+    "monthly_income_calculated_by_transaction": 10000,
+    "total_spending_calculated_by_transaction": -9500,
+    "net_difference_calculated_by_transaction": 500,
+    "summary_comment": "You are saving money this month."
   },
+  "2025-04": {
+    ...
+  }
+}
   "spending_analysis": [
     {
       "category": "Groceries",
@@ -157,34 +162,47 @@ class BudgetPlannerAgent(Agent):
             return None
 
     def calculate_income_and_spending(self, transactions):
-        # fonksiyon içinde ya da dosya başında olmalı
+        from collections import defaultdict
+        from datetime import datetime
+
         def parse_amount(amt_str):
             try:
-                # Remove non-numeric characters except comma, period, minus
-                amt_str = re.sub(r"[^\d.,-]", "", amt_str)
-
-                # Remove commas used as thousands separators (e.g., "1,234.56")
-                amt_str = amt_str.replace(",", "")
-
+                amt_str = re.sub(r"[^\d,.-]", "", amt_str)
+                if ',' in amt_str and '.' in amt_str:
+                    amt_str = amt_str.replace('.', '')
+                amt_str = amt_str.replace(',', '.')
                 return float(amt_str)
             except Exception as e:
                 print(f"parse_amount error for '{amt_str}': {e}")
                 return 0.0
 
-
-        income = 0.0
-        spending = 0.0
+        monthly_data = defaultdict(lambda: {"income": 0.0, "spending": 0.0})
 
         for txn in transactions:
             amt = parse_amount(txn.get("amount", "0"))
             flow = txn.get("flow", "").lower()
+            date_str = txn.get("date", "")
+            try:
+                try:
+                    txn_date = datetime.strptime(date_str, "%d/%m/%Y")
+                except ValueError:
+                    txn_date = datetime.strptime(date_str, "%d.%m.%Y")
+                month_key = txn_date.strftime("%Y-%m")
+            except Exception as e:
+                print(f"Invalid date format '{date_str}': {e}")
+                month_key = "unknown"
 
             if flow == "income":
-                income += amt
+                monthly_data[month_key]["income"] += amt
             elif flow == "spending":
-                spending += amt
+                monthly_data[month_key]["spending"] += amt
 
-        return round(income, 2), round(spending, 2)
+        # Round results
+        for key in monthly_data:
+            monthly_data[key]["income"] = round(monthly_data[key]["income"], 2)
+            monthly_data[key]["spending"] = round(monthly_data[key]["spending"], 2)
+
+        return dict(monthly_data)
 
     def get_precomputed_embedding(self, text):
         try:
@@ -302,21 +320,31 @@ class BudgetPlannerAgent(Agent):
         if not transactions:
             print("⚠️ No transactions found!")
 
-        # Gelir ve harcamaları hesapla
-        income, spending = self.calculate_income_and_spending(transactions)
-        net_difference = round(income - spending, 2)
+        # Gelir ve harcamaları ay ay hesapla
+        monthly_data = self.calculate_income_and_spending(transactions)
 
-        userInfo["user_info"]["income"] = income
-        userInfo["financial_summary"] = {
-            "monthly_income_calculated_by_transcation": income,
-            "total_spending_calculated_by_transaction": spending,
-            "net_difference_calculated_by_transaction": net_difference,
-            "summary_comment": (
+        monthly_summaries = {}
+        for month, data in monthly_data.items():
+            income = data.get("income", 0.0)
+            spending = data.get("spending", 0.0)
+            net_difference = round(income - spending, 2)
+            summary_comment = (
                 "Your monthly budget is in deficit."
                 if net_difference < 0
                 else "You are saving money this month."
-            ),
-        }
+            )
+            monthly_summaries[month] = {
+                "monthly_income_calculated_by_transaction": income,
+                "total_spending_calculated_by_transaction": spending,
+                "net_difference_calculated_by_transaction": net_difference,
+                "summary_comment": summary_comment,
+            }
+
+        # En güncel ayı ana financial_summary olarak set et
+        latest_month = sorted(monthly_summaries.keys())[-1] if monthly_summaries else "unknown"
+        userInfo["user_info"]["income"] = monthly_summaries.get(latest_month, {}).get("monthly_income_calculated_by_transaction", 0.0)
+        userInfo["financial_summary"] = monthly_summaries
+        userInfo["categoryTotals"] = userInfo["spending_data"]["data"].get("categoryTotals", {})
 
         print(
             "🧾 Financial Summary Computed:",

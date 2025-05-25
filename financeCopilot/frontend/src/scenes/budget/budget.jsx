@@ -15,6 +15,7 @@ import {
   Divider,
   Button,
 } from "@mui/material";
+import axios from "axios";
 import { tokens } from "../../theme";
 import { AuthContext } from "../../context/AuthContext";
 import { getBudget } from "../../util/api";
@@ -33,6 +34,7 @@ const Budget = () => {
   const colors = tokens(theme.palette.mode);
   const { user } = useContext(AuthContext);
   const [budgetData, setBudgetData] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     const fetchBudgetData = async () => {
@@ -63,6 +65,30 @@ const Budget = () => {
     }
   };
 
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+  
+      const response = await axios.post(
+        "http://localhost:5001/export-budget",
+        { budgetData },
+        { responseType: "blob" }
+      );
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "budget_report.pdf");
+      document.body.appendChild(link);
+      link.click();
+    } catch (error) {
+      console.error("Export failed", error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+
   if (!budgetData) {
     return (
       <Box p={3}>
@@ -92,6 +118,17 @@ const Budget = () => {
           startIcon={<RefreshIcon />}
         >
           Refresh Your Data
+        </Button>
+      </Box>
+
+      <Box display="flex" justifyContent="flex-end" mb={2}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleExport}
+          // disabled={isExporting}
+        >
+          {isExporting ? "Preparing PDF..." : "Export to PDF"}
         </Button>
       </Box>
 
@@ -129,59 +166,30 @@ const Budget = () => {
         </CardContent>
       </Card>
 
-      {/* Financial Summary Grid */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={4}>
-          <Card sx={{ backgroundColor: colors.primary[500] }}>
-            <CardContent>
-              <Box display="flex" alignItems="center" gap={2}>
-                <AttachMoneyIcon sx={{ color: colors.greenAccent[400], fontSize: 30 }} />
-                <Box>
+        {Object.entries(budgetData.financial_summary).map(([month, summary]) => (
+          <Grid item xs={12} md={4} key={month}>
+            <Card sx={{ backgroundColor: colors.primary[500] }}>
+              <CardContent>
+                <Box display="flex" alignItems="center" gap={2} mb={1}>
+                  <AttachMoneyIcon sx={{ color: colors.greenAccent[400], fontSize: 24 }} />
                   <Typography variant="h6" sx={{ color: colors.grey[100] }}>
-                    Monthly Income
-                  </Typography>
-                  <Typography variant="h4" sx={{ color: colors.grey[100] }}>
-                    {formatCurrency(budgetData.financial_summary.monthly_income_calculated_by_transcation)}
+                    Monthly Summary ({month})
                   </Typography>
                 </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <Card sx={{ backgroundColor: colors.primary[500] }}>
-            <CardContent>
-              <Box display="flex" alignItems="center" gap={2}>
-                <TrendingDownIcon sx={{ color: colors.redAccent[400], fontSize: 30 }} />
-                <Box>
-                  <Typography variant="h6" sx={{ color: colors.grey[100] }}>
-                    Total Spending
-                  </Typography>
-                  <Typography variant="h4" sx={{ color: colors.grey[100] }}>
-                    {formatCurrency(budgetData.financial_summary.total_spending_calculated_by_transaction)}
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <Card sx={{ backgroundColor: colors.primary[500] }}>
-            <CardContent>
-              <Box display="flex" alignItems="center" gap={2}>
-                <TrendingUpIcon sx={{ color: colors.greenAccent[400], fontSize: 30 }} />
-                <Box>
-                  <Typography variant="h6" sx={{ color: colors.grey[100] }}>
-                    Net Difference
-                  </Typography>
-                  <Typography variant="h4" sx={{ color: colors.grey[100] }}>
-                    {formatCurrency(budgetData.financial_summary.net_difference_calculated_by_transaction)}
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+                <Typography variant="body1" sx={{ color: colors.grey[100] }}>
+                  Income: {formatCurrency(summary.monthly_income_calculated_by_transaction)}
+                </Typography>
+                <Typography variant="body1" sx={{ color: colors.grey[100] }}>
+                  Spending: {formatCurrency(summary.total_spending_calculated_by_transaction)}
+                </Typography>
+                <Typography variant="body1" sx={{ color: colors.grey[100] }}>
+                  Net: {formatCurrency(summary.net_difference_calculated_by_transaction)}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
       </Grid>
 
         {/* Improvement Recommendations */}

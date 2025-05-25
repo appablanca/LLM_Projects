@@ -26,12 +26,8 @@ requests>=2.31.0
 # Plotting / Charts
 matplotlib>=3.7.1
 
-# Testing / UI
-gradio>=4.19.0
-
 # Vector Search & Database
-pymongo>=4.7.0
-bson>=0.5.10  # Not always needed, but sometimes used standalone
+pymongo
 
 # Financial Data (Finnhub)
 finnhub-python>=2.4.20

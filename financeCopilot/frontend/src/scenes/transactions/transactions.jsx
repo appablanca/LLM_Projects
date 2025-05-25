@@ -15,7 +15,9 @@ import {
   FormControl,
   Typography,
   useTheme,
+  Button,
 } from "@mui/material";
+import axios from "axios";
 import { tokens } from "../../theme";
 import { AuthContext } from "../../context/AuthContext";
 import { getTransactions } from "../../util/api";
@@ -25,7 +27,9 @@ const Transactions = () => {
   const colors = tokens(theme.palette.mode);
   const { user } = useContext(AuthContext);
   const [transactions, setTransactions] = useState([]);
+  const [categoryTotals, setCategoryTotals] = useState([]);
   const [filtered, setFiltered] = useState([]);
+  const [isExporting, setIsExporting] = useState(false);
   const [filters, setFilters] = useState({
     spendingCategory: "",
     startDate: "",
@@ -36,7 +40,6 @@ const Transactions = () => {
   });
   const [sortOption, setSortOption] = useState("");
 
-  // Helper to parse "dd.mm.yyyy" or "dd/mm/yyyy" to Date object
   const parseDate = (str) => {
     if (!str) return new Date("Invalid Date");
     const delimiter = str.includes(".") ? "." : "/";
@@ -47,7 +50,9 @@ const Transactions = () => {
   useEffect(() => {
     const fetchData = async () => {
       const data = await getTransactions();
+      console.log("Fetched data:", data.category_totals);
       setTransactions(data.transactions || []);
+      setCategoryTotals(data.category_totals || []);
       setFiltered(data.transactions || []);
     };
     fetchData();
@@ -55,11 +60,16 @@ const Transactions = () => {
 
   useEffect(() => {
     const result = transactions.filter((t) => {
-      const matchesCategory = !filters.spendingCategory || t.spendingCategory === filters.spendingCategory;
+      const matchesCategory =
+        !filters.spendingCategory ||
+        t.spendingCategory === filters.spendingCategory;
       const matchesDate =
         (!filters.startDate || t.date >= filters.startDate) &&
         (!filters.endDate || t.date <= filters.endDate);
-      const amountStr = t.amount.replace(/\./g, "").replace(",", ".").replace(" TL", "");
+      const amountStr = t.amount
+        .replace(/\./g, "")
+        .replace(",", ".")
+        .replace(" TL", "");
       const amountValue = parseFloat(amountStr);
       const matchesAmount =
         (!filters.minAmount || amountValue >= parseFloat(filters.minAmount)) &&
@@ -78,13 +88,19 @@ const Transactions = () => {
         break;
       case "amount_asc":
         sorted.sort((a, b) => {
-          const getAmount = (s) => parseFloat(s.amount.replace(/\./g, "").replace(",", ".").replace(" TL", ""));
+          const getAmount = (s) =>
+            parseFloat(
+              s.amount.replace(/\./g, "").replace(",", ".").replace(" TL", "")
+            );
           return getAmount(a) - getAmount(b);
         });
         break;
       case "amount_desc":
         sorted.sort((a, b) => {
-          const getAmount = (s) => parseFloat(s.amount.replace(/\./g, "").replace(",", ".").replace(" TL", ""));
+          const getAmount = (s) =>
+            parseFloat(
+              s.amount.replace(/\./g, "").replace(",", ".").replace(" TL", "")
+            );
           return getAmount(b) - getAmount(a);
         });
         break;
@@ -94,12 +110,44 @@ const Transactions = () => {
     setFiltered(sorted);
   }, [filters, transactions, sortOption]);
 
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      console.log("Exporting transactions:", filtered);
+      console.log("Category totals:", categoryTotals);
+      const response = await axios.post(
+        "http://localhost:5001/export-transaction",
+        { transactions: filtered, category_totals: categoryTotals },
+        { responseType: "blob" }
+      );
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "transaction_report.pdf");
+      document.body.appendChild(link);
+      link.click();
+    } catch (error) {
+      console.error("Export failed", error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <Box p={3}>
       <Typography variant="h4" gutterBottom sx={{ color: colors.grey[800] }}>
         All Transactions
       </Typography>
-      <Box display="flex" gap={2} mb={2} flexWrap="wrap" p={2} borderRadius={2} sx={{ backgroundColor: colors.primary[100] }}>
+      <Box
+        display="flex"
+        gap={2}
+        mb={2}
+        flexWrap="wrap"
+        p={2}
+        borderRadius={2}
+        sx={{ backgroundColor: colors.primary[100] }}
+      >
         <FormControl sx={{ minWidth: 150 }}>
           <InputLabel sx={{ color: colors.grey[800] }}>Category</InputLabel>
           <Select
@@ -123,8 +171,13 @@ const Transactions = () => {
           type="text"
           placeholder="e.g., 01.05.2025"
           value={filters.startDate}
-          onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-          sx={{ input: { color: colors.grey[800] }, label: { color: colors.grey[800] } }}
+          onChange={(e) =>
+            setFilters({ ...filters, startDate: e.target.value })
+          }
+          sx={{
+            input: { color: colors.grey[800] },
+            label: { color: colors.grey[800] },
+          }}
         />
         <TextField
           label="End Date"
@@ -132,23 +185,36 @@ const Transactions = () => {
           placeholder="e.g., 07.05.2025"
           value={filters.endDate}
           onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-          sx={{ input: { color: colors.grey[800] }, label: { color: colors.grey[800] } }}
+          sx={{
+            input: { color: colors.grey[800] },
+            label: { color: colors.grey[800] },
+          }}
         />
         <TextField
           label="Min Amount"
           type="number"
           placeholder="e.g., 100"
           value={filters.minAmount}
-          onChange={(e) => setFilters({ ...filters, minAmount: e.target.value })}
-          sx={{ input: { color: colors.grey[800] }, label: { color: colors.grey[800] } }}
+          onChange={(e) =>
+            setFilters({ ...filters, minAmount: e.target.value })
+          }
+          sx={{
+            input: { color: colors.grey[800] },
+            label: { color: colors.grey[800] },
+          }}
         />
         <TextField
           label="Max Amount"
           type="number"
           placeholder="e.g., 1000"
           value={filters.maxAmount}
-          onChange={(e) => setFilters({ ...filters, maxAmount: e.target.value })}
-          sx={{ input: { color: colors.grey[800] }, label: { color: colors.grey[800] } }}
+          onChange={(e) =>
+            setFilters({ ...filters, maxAmount: e.target.value })
+          }
+          sx={{
+            input: { color: colors.grey[800] },
+            label: { color: colors.grey[800] },
+          }}
         />
         <FormControl sx={{ minWidth: 150 }}>
           <InputLabel sx={{ color: colors.grey[800] }}>Flow</InputLabel>
@@ -180,25 +246,87 @@ const Transactions = () => {
         </FormControl>
       </Box>
 
-      <TableContainer component={Paper} sx={{ maxHeight: "70vh", backgroundColor: colors.primary[500] }}>
+      <Box display="flex" justifyContent="flex-end" mb={2}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleExport}
+          // disabled={isExporting}
+        >
+          {isExporting ? "Preparing PDF..." : "Export to PDF"}
+        </Button>
+      </Box>
+
+      <TableContainer
+        component={Paper}
+        sx={{ maxHeight: "70vh", backgroundColor: colors.primary[500] }}
+      >
         <Table stickyHeader>
           <TableHead>
             <TableRow sx={{ backgroundColor: colors.primary[700] }}>
-              <TableCell sx={{ color: colors.grey[100], backgroundColor: colors.primary[700] }}>Date</TableCell>
-              <TableCell sx={{ color: colors.grey[100], backgroundColor: colors.primary[700] }}>Category</TableCell>
-              <TableCell sx={{ color: colors.grey[100], backgroundColor: colors.primary[700] }}>Description</TableCell>
-              <TableCell align="right" sx={{ color: colors.grey[100], backgroundColor: colors.primary[700] }}>Amount</TableCell>
-              <TableCell sx={{ color: colors.grey[100], backgroundColor: colors.primary[700] }}>Flow</TableCell> {/* New column */}
+              <TableCell
+                sx={{
+                  color: colors.grey[100],
+                  backgroundColor: colors.primary[700],
+                }}
+              >
+                Date
+              </TableCell>
+              <TableCell
+                sx={{
+                  color: colors.grey[100],
+                  backgroundColor: colors.primary[700],
+                }}
+              >
+                Category
+              </TableCell>
+              <TableCell
+                sx={{
+                  color: colors.grey[100],
+                  backgroundColor: colors.primary[700],
+                }}
+              >
+                Description
+              </TableCell>
+              <TableCell
+                align="right"
+                sx={{
+                  color: colors.grey[100],
+                  backgroundColor: colors.primary[700],
+                }}
+              >
+                Amount
+              </TableCell>
+              <TableCell
+                sx={{
+                  color: colors.grey[100],
+                  backgroundColor: colors.primary[700],
+                }}
+              >
+                Flow
+              </TableCell>{" "}
+              {/* New column */}
             </TableRow>
           </TableHead>
           <TableBody>
             {filtered.map((tx) => (
               <TableRow key={tx._id}>
-                <TableCell sx={{ color: colors.grey[100] }}>{tx.date}</TableCell>
-                <TableCell sx={{ color: colors.grey[100] }}>{tx.spendingCategory}</TableCell>
-                <TableCell sx={{ color: colors.grey[100] }}>{tx.description}</TableCell>
-                <TableCell align="right" sx={{ color: colors.grey[100] }}>{tx.amount}</TableCell>
-                <TableCell sx={{ color: colors.grey[100] }}>{tx.flow}</TableCell> {/* New data */}
+                <TableCell sx={{ color: colors.grey[100] }}>
+                  {tx.date}
+                </TableCell>
+                <TableCell sx={{ color: colors.grey[100] }}>
+                  {tx.spendingCategory}
+                </TableCell>
+                <TableCell sx={{ color: colors.grey[100] }}>
+                  {tx.description}
+                </TableCell>
+                <TableCell align="right" sx={{ color: colors.grey[100] }}>
+                  {tx.amount}
+                </TableCell>
+                <TableCell sx={{ color: colors.grey[100] }}>
+                  {tx.flow}
+                </TableCell>{" "}
+                {/* New data */}
               </TableRow>
             ))}
           </TableBody>

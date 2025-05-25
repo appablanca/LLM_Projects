@@ -1,6 +1,8 @@
 import os
 import json
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use("Agg")  #
 from fpdf import FPDF
 import tempfile
 import google.generativeai as genai
@@ -46,7 +48,9 @@ JSON:
 
 # Kullanıcı bilgisine göre kişisel bir giriş paragrafı hazırlar
 def generate_intro_from_user_info(user_info):
-    name = user_info.get("name", "User")
+    name = user_info.get("name", "Customer")
+    if name == "N/A":
+        name = "Customer"
     income = user_info.get("income", "Not provided")
     city = user_info.get("location", "Unknown")
     return f"Dear {name}, after analyzing your financial information, here are some suggestions based on your income and spending habits. City: {city}, Monthly Income: {income} TL\n\n"
@@ -148,6 +152,14 @@ def generate_transaction_pdf(data):
     summary = generate_summary_from_transactions(data)
     summary = normalize_text(summary)
 
+    print("Receieved data:",data )
+    category_totals_raw = data.get("category_totals", {})
+    print("Raw Category Totals:", category_totals_raw)
+    if isinstance(category_totals_raw, list):
+        category_totals_dict = {item["category"]: item["total"] for item in category_totals_raw}
+        data["category_totals"] = category_totals_dict
+
+    print("Category Totals:", data.get("category_totals", {}))
     chart_path = generate_pie_chart(data.get("category_totals", {}))
 
     pdf = FPDF()
@@ -207,11 +219,22 @@ def generate_transaction_pdf(data):
 
 # Bütçe planlaması tabanlı PDF rapor üretir (giriş, grafikler, öneriler, tablo)
 def generate_budget_pdf(data):
-    user_info = data.get("user_info", {})
+    print("Received data for budget report:", data)
+    print("User info:", data.get("budgetData", {}).get("user_info", {}))
+    user_info = data.get("budgetData", {}).get("user_info", {})
+
     intro = normalize_text(generate_intro_from_user_info(user_info))
 
-    spending_over_time = data.get("spending_over_time", {})
-    monthly_data = data.get("monthly_net_data", {})
+    spending_over_time = data.get("budgetData", {}).get("spending_over_time", {})
+    raw_financial_summary = data.get("budgetData", {}).get("financial_summary", {})
+    monthly_data = {
+        k: {
+            "income": v.get("monthly_income_calculated_by_transaction", 0),
+            "expenses": v.get("total_spending_calculated_by_transaction",0)
+        }
+        for k, v in raw_financial_summary.items()
+        if isinstance(v, dict) and k.count("-") == 1
+    }
 
     pdf = FPDF()
     pdf.add_page()
@@ -235,7 +258,7 @@ def generate_budget_pdf(data):
 
     # 🔹 Category-based improvement recommendations
     recs_by_category = {}
-    for rec in data.get("improvement_recommendations", []):
+    for rec in data.get("budgetData", {}).get("improvement_recommendations", []):
         lowered = rec.lower()
         category = "General"
         if "transport" in lowered or "bus" in lowered or "taxi" in lowered:
@@ -254,11 +277,14 @@ def generate_budget_pdf(data):
             pdf.multi_cell(0, 10, f"- {normalize_text(rec)}")
         pdf.ln(4)
 
-    # 🔹 Suggestions Table
     pdf.ln(10)
     table_data = [
-        {"category": "Groceries", "total_spent": "3,200 TL", "suggestion": "Plan weekly meals, buy in bulk"},
-        {"category": "Entertainment", "total_spent": "2,000 TL", "suggestion": "Limit to 10% of income"},
+        {
+            "category": item.get("area", "Unknown"),
+            "total_spent": f'{item.get("expected_saving", "0")} TL',
+            "suggestion": normalize_text(item.get("suggestion", ""))
+        }
+        for item in data.get("budgetData", {}).get("saving_suggestions", [])
     ]
     add_suggestions_table_to_pdf(pdf, table_data)
 

@@ -118,6 +118,10 @@ Example Target JSON Structure:
   }}
 }}
 
+ #Important notes:
+- "+" Amount values should be treated as income, and should be labeled as "income" in the `flow` field.
+- "-" Amount values should be treated as expenses, and should be labeled as "spending" in the `flow` field.
+
 """
 
 class ExpenseAnalyzerAgent(Agent):
@@ -300,6 +304,8 @@ class ExpenseAnalyzerAgent(Agent):
             print("🗣️ Doğal dil özeti eklendi.")
 
             print("✅ PDF analiz işlemi tamamlandı.")
+            job_status["static-track-id"].setdefault("steps", []).append("Construction complete.")
+            job_status["static-track-id"]["step"] = "Construction complete."      
             return final_output
 
         except Exception as e:

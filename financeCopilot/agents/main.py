@@ -225,14 +225,14 @@ def get_job_status(job_id):
 
 
 
-@app.route("/test-export-transaction", methods=["POST"])
-def test_transaction_export():
+@app.route("/export-transaction", methods=["POST"])
+def transaction_export():
     data = request.get_json()
     path = generate_transaction_pdf(data)
     return send_file(path, as_attachment=True)
 
-@app.route("/test-export-budget", methods=["POST"])
-def test_budget_export():
+@app.route("/export-budget", methods=["POST"])
+def budget_export():
     data = request.get_json()
     path = generate_budget_pdf(data)
     return send_file(path, as_attachment=True)

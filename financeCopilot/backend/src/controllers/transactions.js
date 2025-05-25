@@ -166,6 +166,7 @@ exports.getTransactionsAndSpending = async (req, res) => {
     // Get all transactions
     const transactions = await Transaction.find({ userId })
       .sort({ date: -1 })
+      .select("-embeddings")
       .lean();
 
     res.status(200).json({
