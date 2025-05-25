@@ -1,5 +1,8 @@
-import os, sys, json
+import sys
+import os
+import json
 import google.generativeai as genai
+from flask import send_file
 from agents.baseAgent import Agent
 from agents.expenseAnalyzerAgent import ExpenseAnalyzerAgent, expenseAnalyzerRole
 from agents.normalChatAgent import NormalChatAgent, normalChatAgentRole
@@ -7,6 +10,8 @@ from agents.orcestratorAgent import Orcestrator, orcestratorAgentRole, agents
 from agents.lifePlannerAgent import LifePlannerAgent, lifePlannerAgentRole
 from agents.budgetPlannerAgent import BudgetPlannerAgent, budgetPlannerAgentRole
 from agents.investmentAdvisorAgent import InvestmentAdvisorAgent, investmentAdvisorAgentRole
+from agents.exportReportAgent import generate_transaction_pdf, generate_budget_pdf
+
 from agents.job_tracking import job_status
 import asyncio
 from flask import Flask, request, jsonify
@@ -217,6 +222,41 @@ def get_job_status(job_id):
             }
         })
     return jsonify({"success": True, "status": job})
+
+
+
+@app.route("/test-export-transaction", methods=["POST"])
+def test_transaction_export():
+    data = request.get_json()
+    path = generate_transaction_pdf(data)
+    return send_file(path, as_attachment=True)
+
+@app.route("/test-export-budget", methods=["POST"])
+def test_budget_export():
+    data = request.get_json()
+    path = generate_budget_pdf(data)
+    return send_file(path, as_attachment=True)
+
+"""
+#TEST İÇİN POSTMAN İLE DENEME KISMI
+
+import base64
+
+@app.route("/test-export-transaction-preview", methods=["POST"])
+def test_transaction_preview():
+    data = request.get_json()
+    path = generate_transaction_pdf(data)
+
+    with open(path, "rb") as f:
+        encoded_pdf = base64.b64encode(f.read()).decode("utf-8")
+
+    return jsonify({
+        "success": True,
+        "filename": "transaction_report.pdf",
+        "base64_pdf": encoded_pdf
+    })
+"""
+
 
 if __name__ == "__main__":
     print("Starting Flask server on port 5001...")

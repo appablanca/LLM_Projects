@@ -148,6 +148,7 @@ class ExpenseAnalyzerAgent(Agent):
             system_instruction=self.role,
         )
 
+# PDF'den metin çıkartır (tüm sayfaları birleştir)
     def extract_text_from_pdf(self, pdf_path: str) -> str:
         print("📄 PDF'den metin çıkarılıyor...")
         all_text = ""
@@ -164,6 +165,7 @@ class ExpenseAnalyzerAgent(Agent):
             print(f"❌ Metin çıkarma hatası: {str(e)}")
             raise
 
+# Uzun metni parçalara böl (LLM token sınırı için)
     def split_text_into_chunks(self, text, max_chars=5000):
         print("✂️ Metin parçalara bölünüyor...")
         chunks = []
@@ -179,6 +181,15 @@ class ExpenseAnalyzerAgent(Agent):
         print(f"📦 {len(chunks)} adet parça oluşturuldu.")
         return chunks
 
+# Ana fonksiyon bu:
+        # - PDF'i geçici klasöre kaydet
+        # - Metni çıkar, parçalara ayır
+        # - Gemini ile her parçayı işle
+        # - Tüm transaction'ları topla
+        # - Miktarları normalize et
+        # - Kategori toplamlarını hesapla
+        # - Doğal dil özeti oluştur
+        # - Final JSON'u döndür
     def categorize_pdf(self, pdf_file) -> dict:
         temp_dir = tempfile.gettempdir()
         temp_path = os.path.join(temp_dir, pdf_file.filename)
@@ -301,6 +312,7 @@ class ExpenseAnalyzerAgent(Agent):
                 os.remove(temp_path)
                 print("🧹 Geçici dosya silindi.")
 
+ # Kategorilere göre Türkçe doğal özet üretiyor
     def generate_natural_language_summary(self, final_output: dict) -> str:
         try:
             customer_name = final_output.get("customer_info", {}).get("full_name", "müşteri")
