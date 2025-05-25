@@ -92,11 +92,13 @@ budgetPlannerAgentRole = """
     Important Notes:
     - Do not mention any transaction that happens only once in the improvement suggestions .
     - Do not mention any suggestion without a specific date and amount in the improvement suggestions.
+    - Do not mention any suggestion , if the transaction amount is too low (e.g. less than 100 TL).
     -Your suggestions should be personalized and grounded in the user's actual transactions and must be at least 7 suggestions.
     - The user data is provided in the input.
     - When giving suggestions, consider the user's financial situation and and mostly transactions and provide realistic options and give specific suggestions, examples.
     -Analyze the relevant transactions. When you give suggestion , if you notice excessive or frequent spending (e.g. taxis, food delivery, entertainment), highlight them with specific dates, amounts, and categories. Provide suggestions to reduce such expenses with alternatives. Example:
       "On 08/03/2025, you spent 181.95 TL on a taxi. Consider using public transport to save money."
+      
       
 """
 
@@ -216,12 +218,23 @@ class BudgetPlannerAgent(Agent):
         return keywords
 
     def retrieve_contextual_transactions(self, focus_keywords, top_k=80):
+        
+        def convert_objectid(obj):
+            if isinstance(obj, list):
+                return [convert_objectid(i) for i in obj]
+            elif isinstance(obj, dict):
+                return {k: convert_objectid(v) for k, v in obj.items()}
+            elif isinstance(obj, ObjectId):
+                return str(obj)
+            else:
+                return obj
+
         all_results = []
 
         for keyword in focus_keywords:
             query_embedding = self.get_precomputed_embedding(keyword)
             print(f"🔍 Searching for keyword: {keyword}")
-
+            
             results = self.transactions_collection.aggregate(
                 [
                     {
@@ -236,13 +249,23 @@ class BudgetPlannerAgent(Agent):
                     }
                 ]
             )
-            all_results.extend(list(results))
-        return all_results
+            convertedResult=convert_objectid(list(results))  # Convert ObjectId to string
+            # embeddings alanını çıkar ve tüm ObjectId, date gibi alanları stringe çevir
+            cleaned_results = [
+            {k: v for k, v in doc.items() if k != "embeddings"}
+            for doc in convertedResult
+        ]
+
+            print(f"{cleaned_results} for keyword '{keyword}' retrieved.")
+            all_results.extend(cleaned_results)
+
+            return all_results
+
     
     
 
     
-    def filter_transactions(self, transactions, min_amount=100.0, max_per_category=5):
+    def filter_transactions(self, transactions, min_amount=0.0, max_per_category=5):
         def parse_amount(amt_str):
             a = re.sub(r"[^\d,.-]", "", amt_str).replace(",", ".")
             try:
@@ -266,16 +289,7 @@ class BudgetPlannerAgent(Agent):
     
     def run_budget_analysis(self, user_id):
 
-        def convert_objectid(obj):
-            if isinstance(obj, list):
-                return [convert_objectid(i) for i in obj]
-            elif isinstance(obj, dict):
-                return {k: convert_objectid(v) for k, v in obj.items()}
-            elif isinstance(obj, ObjectId):
-                return str(obj)
-            else:
-                return obj
-
+        
         userInfo = self.get_user_data(user_id)
         if not userInfo:
             print("❌ No data retrieved for user.")
@@ -319,14 +333,10 @@ class BudgetPlannerAgent(Agent):
         relevant_txns = self.retrieve_contextual_transactions(
             focus_keywords
         )
-        relevant_txns = convert_objectid(relevant_txns)
-        # Remove 'embeddings' field from each transaction to reduce prompt size
-        relevant_txns = [
-    {k: v for k, v in dict(txn).items() if k != "embeddings"}
-    for txn in relevant_txns
-    
-]       
-        relevant_txns = self.filter_transactions(relevant_txns)
+  
+        print(f"📥Before filtering retrieved {len(relevant_txns)} relevant transactions from vector DB")
+
+        # relevant_txns = self.filter_transactions(relevant_txns)
 
         print(f"📥 Retrieved {len(relevant_txns)} relevant transactions from vector DB")
       

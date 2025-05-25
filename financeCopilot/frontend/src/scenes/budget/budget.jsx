@@ -184,6 +184,31 @@ const Budget = () => {
         </Grid>
       </Grid>
 
+        {/* Improvement Recommendations */}
+      <Card sx={{ mt: 3, mb:3, backgroundColor: colors.primary[500] }}>
+        <CardContent>
+          <Box display="flex" alignItems="center" gap={2} mb={2}>
+            <LightbulbIcon sx={{ color: colors.greenAccent[400], fontSize: 30 }} />
+            <Typography variant="h6" sx={{ color: colors.grey[100] }}>
+              Improvement Recommendations
+            </Typography>
+          </Box>
+          <List>
+            {budgetData.improvement_recommendations.map((recommendation, index) => (
+              <ListItem key={index}>
+                <ListItemText
+                  primary={
+                    <Typography variant="body1" sx={{ color: colors.grey[100] }}>
+                      {recommendation}
+                    </Typography>
+                  }
+                />
+              </ListItem>
+            ))}
+          </List>
+        </CardContent>
+      </Card>      
+
       {/* Spending Analysis and Recommendations Grid */}
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
@@ -221,6 +246,7 @@ const Budget = () => {
             </CardContent>
           </Card>
         </Grid>
+
         <Grid item xs={12} md={6}>
           <Card sx={{ backgroundColor: colors.primary[500], height: "100%" }}>
             <CardContent>
@@ -261,30 +287,7 @@ const Budget = () => {
         </Grid>
       </Grid>
 
-      {/* Improvement Recommendations */}
-      <Card sx={{ mt: 3, backgroundColor: colors.primary[500] }}>
-        <CardContent>
-          <Box display="flex" alignItems="center" gap={2} mb={2}>
-            <LightbulbIcon sx={{ color: colors.greenAccent[400], fontSize: 30 }} />
-            <Typography variant="h6" sx={{ color: colors.grey[100] }}>
-              Improvement Recommendations
-            </Typography>
-          </Box>
-          <List>
-            {budgetData.improvement_recommendations.map((recommendation, index) => (
-              <ListItem key={index}>
-                <ListItemText
-                  primary={
-                    <Typography variant="body1" sx={{ color: colors.grey[100] }}>
-                      {recommendation}
-                    </Typography>
-                  }
-                />
-              </ListItem>
-            ))}
-          </List>
-        </CardContent>
-      </Card>
+    
     </Box>
   );
 };
