@@ -95,13 +95,14 @@ def handle_user_input():
 
             # Step 2: Get final natural language response from orchestrator
             final_response = orchestrator.generate_final_response(user_text, result)
-            json_final_response = json.loads(final_response)
-            return jsonify({"success": True, "response": json_final_response["natural_response"]})
+            parsed_response = json.loads(final_response)
+            extra_parsed= json.loads(parsed_response["agent_response"])
+            return jsonify({"success": True, "response": extra_parsed})
 
 
         # Handle Job 2: Already in natural language
-        elif decision_json["job"] == "natural_response":
-            return jsonify({"success": True, "response": decision_json["natural_response"]})
+        elif decision_json["job"] == "transporting":
+            return jsonify({"success": True, "response": decision_json["transporting"]})
 
         else:
             return jsonify({"success": False, "message": "Invalid job type from orchestrator"}), 400

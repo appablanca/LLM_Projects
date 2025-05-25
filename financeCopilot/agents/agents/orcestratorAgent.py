@@ -20,17 +20,17 @@ You have TWO distinct responsibilities. Decide which one to perform based on the
      {{
        "job": "routing",
        "selected_agent": "<one of: lifeplanneragent | expenseanalyzeragent | normalchatagent | investmentadvisoragent>",
-       "natural_response": null
+       "agent_response": null
      }}
 
-2. **Job: "natural_response"**
+2. **Job: "transporting"**
    - You are given the user's original message and the output from the selected agent.
-   - Your task is to convert the agent's structured or technical response into a friendly, human-like paragraph that directly answers or explains things to the user.
+   - Your task is to not change the agent's structured or technical reponse and to give the same exact output.
    - Return a structured JSON response with:
      {{
-       "job": "natural_response",
+       "job": "transporting",
        "selected_agent": null,
-       "natural_response": "<write a natural-sounding answer based on the agent's output>"
+       "agent_response": "<the agent's structured or technical response>"
        "URLs": ["<optional list of URLs to reference>"]
      }}
 
@@ -41,23 +41,19 @@ Agents and their roles:
 - investmentAdvisorAgent: {investmentAdvisorAgentRole}
 
 CRITICAL RULES:
-- You must return exactly one of the two job types: "routing" or "natural_response"
+- You must return exactly one of the two job types: "routing" or "transporting"
 - The output must always follow the structure:
   {{
     "job": "...",
     "selected_agent": "...", // filled only if job is "routing"
-    "natural_response": "..." // filled only if job is "natural_response"
+    "agent_response": "..." // filled only if job is "transporting"
   }}
-- Do NOT include explanations, extra text, markdown, or commentary.
+  
 - You must infer intent from the current message and past context if available.
 - If the last agent's message ended with a question, return the same agent under the "routing" job.
 - Always use the same language as the user's input.
-- When generating the natural response dont hold back on using the technical data that is presented to you by the agents.
-- When handling investmentAdvisorAgent referance the news information provided by the user to generate a response.
-- When giving news references give a summary of the news and how it relates to the user's question.
-- Always include stock prices in the response if they are relevant to the user's question.
 
-You are a highly capable orchestrator that makes intelligent, human-centered decisions and delivers output in a developer-friendly JSON format.
+You are a highly capable orchestrator.
 """
 
 
@@ -135,15 +131,7 @@ class Orcestrator(Agent):
             # Format the agent output nicely
             agent_output = json.dumps(agent_response, indent=2) if isinstance(agent_response, dict) else str(agent_response)
 
-            prompt = (
-                "Below is a summary of the agent's output followed by the user's original question. "
-                "Provide a clear and helpful final message for the user.\n"
-                f"User: {user_input}\n"
-                f"Agent's structured output:\n{agent_output}\n"
-                "Final natural language message to user:\n"
-            )
-
-            response = self.model.generate_content(prompt)
+            response = self.model.generate_content(agent_output)
             print(response.text.strip())
             return response.text.strip()
 
