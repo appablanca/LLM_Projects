@@ -73,8 +73,12 @@ budgetPlannerAgentRole = """
     }...
   ],
   "improvement_recommendations": [
-    "Try to keep fixed expenses under 50% of your income."
+    "On 08.03.2025, 03.02.2025 (You should mention all transaction dates of this spending if it occured more than once), you spent 181.95 TL on a taxi. Consider using public transport to save money."
   ]
+  "Transaction_references": [
+    " transaction_id_1",
+    " transaction_id_6",]
+    
   "financial_health": {
     "status": "Good",
     "percentage_of_financial_health": 80,
@@ -84,9 +88,13 @@ budgetPlannerAgentRole = """
   '''json
     - The response should be in JSON format.
     
-    #Note:
+  
+    Important Notes:
+    - Do not mention any transaction that happens only once in the improvement suggestions .
+    - Do not mention any suggestion without a specific date and amount in the improvement suggestions.
+    -Your suggestions should be personalized and grounded in the user's actual transactions and must be at least 7 suggestions.
     - The user data is provided in the input.
-    - When giving suggestions, consider the user's financial situation and provide realistic options and give specific suggestions, examples.
+    - When giving suggestions, consider the user's financial situation and and mostly transactions and provide realistic options and give specific suggestions, examples.
     -Analyze the relevant transactions. When you give suggestion , if you notice excessive or frequent spending (e.g. taxis, food delivery, entertainment), highlight them with specific dates, amounts, and categories. Provide suggestions to reduce such expenses with alternatives. Example:
       "On 08/03/2025, you spent 181.95 TL on a taxi. Consider using public transport to save money."
       
@@ -150,14 +158,17 @@ class BudgetPlannerAgent(Agent):
         # fonksiyon içinde ya da dosya başında olmalı
         def parse_amount(amt_str):
             try:
-                # Sadece rakam, nokta, virgül, eksi işareti bırak
-                amt_str = re.sub(r"[^\d,.-]", "", amt_str)
-                # Noktaları kaldır (binlik ayırıcı), virgülü ondalık ayırıcı yap
-                amt_str = amt_str.replace(".", "").replace(",", ".")
+                # Remove non-numeric characters except comma, period, minus
+                amt_str = re.sub(r"[^\d.,-]", "", amt_str)
+
+                # Remove commas used as thousands separators (e.g., "1,234.56")
+                amt_str = amt_str.replace(",", "")
+
                 return float(amt_str)
             except Exception as e:
                 print(f"parse_amount error for '{amt_str}': {e}")
                 return 0.0
+
 
         income = 0.0
         spending = 0.0
@@ -227,7 +238,32 @@ class BudgetPlannerAgent(Agent):
             )
             all_results.extend(list(results))
         return all_results
+    
+    
 
+    
+    def filter_transactions(self, transactions, min_amount=100.0, max_per_category=5):
+        def parse_amount(amt_str):
+            a = re.sub(r"[^\d,.-]", "", amt_str).replace(",", ".")
+            try:
+                return float(amt_str)
+            except:
+                return 0.0
+
+        filtered = {}
+        for txn in transactions:
+            amt = parse_amount(txn.get("amount", "0"))
+            if amt < min_amount:
+                continue
+            cat = txn.get("spendingCategory", "unknown")
+            if cat not in filtered:
+                filtered[cat] = []
+            if len(filtered[cat]) < max_per_category:
+                filtered[cat].append(txn)
+        # flatten list
+        return [item for sublist in filtered.values() for item in sublist]
+    
+    
     def run_budget_analysis(self, user_id):
 
         def convert_objectid(obj):
@@ -285,9 +321,15 @@ class BudgetPlannerAgent(Agent):
         )
         relevant_txns = convert_objectid(relevant_txns)
         # Remove 'embeddings' field from each transaction to reduce prompt size
-        for txn in relevant_txns:
-            txn.pop("embeddings", None)
+        relevant_txns = [
+    {k: v for k, v in dict(txn).items() if k != "embeddings"}
+    for txn in relevant_txns
+    
+]       
+        relevant_txns = self.filter_transactions(relevant_txns)
+
         print(f"📥 Retrieved {len(relevant_txns)} relevant transactions from vector DB")
+      
         if relevant_txns:
           print(f"Sample transaction: {relevant_txns[0]}")
         else:
@@ -304,13 +346,15 @@ class BudgetPlannerAgent(Agent):
 == Relevant Transactions (via Vector Search) ==
 {json.dumps(relevant_txns, indent=2)}
 
+
+
 ...
 """
         print("📝 Final Prompt Sent to LLM:\n", prompt[:1500], "...\n")
        
         try:
             response = self.model.generate_content(prompt)
-            print("✅ Raw LLM Response:\n", response.text[:1500], "...\n")
+            
             return json.loads(response.text.strip())
         except Exception as e:
             print("❌ LLM error:", e)
