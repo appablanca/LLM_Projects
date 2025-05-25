@@ -1,4 +1,5 @@
 from agents.baseAgent import Agent        
+from agents.job_tracking import job_status
 import os
 import httpx
 
@@ -33,6 +34,7 @@ Your responsibilities:
 •⁠  Consider user’s income, expenses, and savings rate when calculating monthly plans.
 •⁠  Always assume the user is serious and committed — help them succeed.
 •⁠ The plan should always include a list of "recommendations":
+•⁠ The wanted plan is not financially posible and infeasble with user's information, mention it.
 
 •⁠  ⁠If it's about buying a car: suggest 2–3 sample car models in the entry or middle segment.
 •⁠  ⁠If it's about buying a house: suggest 2–3 regions with city + neighborhood + m² information.
@@ -182,9 +184,13 @@ class LifePlannerAgent(Agent):
 
     async def get_life_plan(self, user_message,user):
         user_language = detect(user_message)
+        job_status["static-track-id"].setdefault("steps", []).append("Detecting user language and preparing profile...")
+        job_status["static-track-id"]["step"] = "Detecting user language and preparing profile..."
         try:
             sessionUser= json.loads(user)
             user_data = await self.fetch_user_data(sessionUser["id"])
+            job_status["static-track-id"].setdefault("steps", []).append("Fetched user data. Parsing profile and macroeconomic indicators...")
+            job_status["static-track-id"]["step"] = "Fetched user data. Parsing profile and macroeconomic indicators..."
             macro_data = await self.fetch_macro_data()
             parsed_profile = await self.parse_user_fields(user_data)
 
@@ -227,6 +233,8 @@ User Profile:
                 - Car Price Index: {car_price_index}    
                 - Housing Price Index: {housing_price_index}
                 """
+            job_status["static-track-id"].setdefault("steps", []).append("Generating prompt for Gemini...")
+            job_status["static-track-id"]["step"] = "Generating prompt for Gemini..."
 
             instruction = f"""The user's message is in **{user_language.upper()}**.
             Respond in the same language the user asked the question.Please use the profile and macroeconomic data below to generate a realistic, step-by-step, time-based financial life plan."""
@@ -285,17 +293,21 @@ User Profile:
 
 
             print(f"📎 Prompt sent to model:\n{prompt}")
+            job_status["static-track-id"].setdefault("steps", []).append("Calling Agent to generate financial life plan...")
+            job_status["static-track-id"]["step"] = "Calling Agent to generate financial life plan..."
 
             response = self.model.generate_content(prompt)
-            response = self.model.generate_content(prompt)
 
-# 🔽 İşte buraya ekle!
             parsed_response = json.loads(response.text.strip())
+            job_status["static-track-id"].setdefault("steps", []).append("Gemini response received. Post-processing results...")
+            job_status["static-track-id"]["step"] = "Gemini response received. Post-processing results..."
 
             goal = parsed_response.get("lifePlan", {}).get("goal", "").lower()
 
             if "araba" in goal or "car" in goal or "otomobil" in goal:
                 vehicle_data = self.get_vehicle_options(make="Renault", model="Megane")  # örnek veri
+                job_status["static-track-id"].setdefault("steps", []).append("Fetching vehicle suggestions...")
+                job_status["static-track-id"]["step"] = "Fetching vehicle suggestions..."
                 vehicle_section = "Örnek Araçlar:\n" + "\n".join(
                 [f"- {v['year']} {v['make']} {v['model']}: {v['price']} TRY" for v in vehicle_data]
     )
@@ -303,15 +315,21 @@ User Profile:
 
             elif "ev" in goal or "house" in goal or "konut" in goal:
                 housing_data = self.get_housing_options(location=parsed_profile.get("city", "Istanbul"))
+                job_status["static-track-id"].setdefault("steps", []).append("Fetching housing suggestions...")
+                job_status["static-track-id"]["step"] = "Fetching housing suggestions..."
                 housing_section = "Örnek Konutlar:\n" + "\n".join(
                 [f"- {h['address']} – {h['squareFeet']} m² – {h['rentEstimate']} TRY/ay" for h in housing_data]
     )
                 parsed_response["lifePlan"]["recommendations"].append(housing_section)
 
+            job_status["static-track-id"].setdefault("steps", []).append("Life plan construction complete.")
+            job_status["static-track-id"]["step"] = "Life plan construction complete."
 # 🔚 Artık enriched JSON dönüyorsun:
             return parsed_response
 
 
         except Exception as e:
             print(f"Error in get_life_plan: {e}")
+            job_status["static-track-id"].setdefault("steps", []).append("Error occurred during life plan generation.")
+            job_status["static-track-id"]["step"] = "Error occurred during life plan generation."
             return json.dumps({"error": "Hayat planı oluşturulamadı."})

@@ -1,4 +1,5 @@
 from agents.baseAgent import Agent
+from agents.job_tracking import job_status
 import os
 import json
 import httpx
@@ -100,6 +101,8 @@ class InvestmentAdvisorAgent(Agent):
 
     def get_current_market_prices(self, file_path: str):
         symbol_to_price = {}
+        job_status["static-track-id"].setdefault("steps", []).append("Reading current market prices...")
+        job_status["static-track-id"]["step"] = "Reading current market prices..."
         with open(file_path, "r") as f:
             for line in f:
                 line = line.strip()
@@ -123,11 +126,16 @@ class InvestmentAdvisorAgent(Agent):
     
     def give_summary_lines(self):
         # Step 1: Get the current market prices
+        job_status["static-track-id"].setdefault("steps", []).append("Reading current market prices...")
+        job_status["static-track-id"]["step"] = "Reading current market prices..."
         current_prices = self.get_current_market_prices("./agents/financeAgent/market_prices_output.txt")
 
         # Step 2: Load historical data
         with open("./agents/financeAgent/historical_data.json", "r", encoding="utf-8") as file:
             stock_data = json.load(file)
+
+        job_status["static-track-id"].setdefault("steps", []).append("Filtering low-risk stock candidates...")
+        job_status["static-track-id"]["step"] = "Filtering low-risk stock candidates..."
 
         # Step 3: Summarize each stock
         low_risk_candidates= []
@@ -135,7 +143,8 @@ class InvestmentAdvisorAgent(Agent):
             if(s["volatility"] < 35 and s["growth_pct"] > 0):
                 low_risk_candidates.append(s)
 
-
+        job_status["static-track-id"].setdefault("steps", []).append("Selecting top low-risk stocks for summary...")
+        job_status["static-track-id"]["step"] = "Selecting top low-risk stocks for summary..."
 
         # Step 5: Select top 10 by lowest volatility
         selected = sorted(low_risk_candidates, key=lambda x: x["volatility"])[:5]
@@ -147,9 +156,14 @@ class InvestmentAdvisorAgent(Agent):
             symbol = s["symbol"]
             s["today_price"] = current_prices.get(symbol, "N/A")
 
+            job_status["static-track-id"].setdefault("steps", []).append(f"Analyzing news for {symbol}...")
+            job_status["static-track-id"]["step"] = f"Analyzing news for {symbol}..."
+
             try:
                 news_summary = self.news_analyzer.analyze_news(symbol)
             except Exception as e:
+                job_status["static-track-id"].setdefault("steps", []).append(f"News analysis failed for {symbol}")
+                job_status["static-track-id"]["step"] = f"News analysis failed for {symbol}"
                 print(f"⚠️ News analysis failed for {symbol}: {e}")
                 news_summary = {
                     "overview": "Unavailable",
@@ -180,6 +194,9 @@ News URL: {", ".join(news_summary.get("URL", []))}
 ---------------------------------------------------------
 """
 
+        job_status["static-track-id"].setdefault("steps", []).append("Stock summary complete. Preparing final response...")
+        job_status["static-track-id"]["step"] = "Stock summary complete. Preparing final response..."
+
         return summary_lines
 
     async def get_financal_advise(self, user_message,user):
@@ -209,6 +226,8 @@ News URL: {", ".join(news_summary.get("URL", []))}
             + summery_lines
         )
 
+        job_status["static-track-id"].setdefault("steps", []).append("Generating investment advice using Gemini...")
+        job_status["static-track-id"]["step"] = "Generating investment advice using Gemini..."
         print(prompt)
         response = self.generate_response(prompt)
         return json.loads(response)

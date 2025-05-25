@@ -3,6 +3,7 @@ import pdfplumber
 import tempfile
 from agents.baseAgent import Agent
 import google.generativeai as genai
+from agents.job_tracking import job_status
 
 spendingCategories = [
     "food_drinks", "clothing_cosmetics", "subscription", "groceries",
@@ -185,13 +186,27 @@ class ExpenseAnalyzerAgent(Agent):
         try:
             print("📥 PDF dosyası geçici klasöre kaydediliyor...")
             pdf_file.save(temp_path)
+
+            job_status["static-track-id"].setdefault("steps", []).append("Saving uploaded PDF to temporary directory...")
+            job_status["static-track-id"]["step"] = "Saving uploaded PDF to temporary directory..."
+
+            job_status["static-track-id"].setdefault("steps", []).append("Extracting text from PDF...")
+            job_status["static-track-id"]["step"] = "Extracting text from PDF..."
+
             print(f"🗂️ Kaydedilen dosya: {temp_path}")
 
             text = self.extract_text_from_pdf(temp_path)
+
+            job_status["static-track-id"].setdefault("steps", []).append("Splitting text into chunks for processing...")
+            job_status["static-track-id"]["step"] = "Splitting text into chunks for processing..."
+
             if not text.strip():
                 raise ValueError("📭 PDF boş veya metin içeremiyor.")
 
             chunks = self.split_text_into_chunks(text, max_chars=5000)
+
+            job_status["static-track-id"].setdefault("steps", []).append("Sending chunks to Gemini for categorization...")
+            job_status["static-track-id"]["step"] = "Sending chunks to Gemini for categorization..."
 
             all_transactions = []
             first_card_limit = None
@@ -216,7 +231,13 @@ class ExpenseAnalyzerAgent(Agent):
 
                 all_transactions.extend(parsed.get("transactions", []))
 
+                job_status["static-track-id"].setdefault("steps", []).append(f"Chunk {i+1}/{len(chunks)} categorized.")
+                job_status["static-track-id"]["step"] = f"Chunk {i+1}/{len(chunks)} categorized."
+
             print(f"💳 Toplam işlem sayısı: {len(all_transactions)}")
+
+            job_status["static-track-id"].setdefault("steps", []).append("Normalizing amounts and calculating category totals...")
+            job_status["static-track-id"]["step"] = "Normalizing amounts and calculating category totals..."
 
             for t in all_transactions:
                 raw_amount = t.get("amount", "")
@@ -245,6 +266,9 @@ class ExpenseAnalyzerAgent(Agent):
 
             print("📊 Harcama kategorileri hesaplandı.")
 
+            job_status["static-track-id"].setdefault("steps", []).append("Generating natural language summary...")
+            job_status["static-track-id"]["step"] = "Generating natural language summary..."
+
             final_output = {
                 "type": "account statement",
                 "customer_info": first_customer_info or {"full_name": None},
@@ -258,12 +282,18 @@ class ExpenseAnalyzerAgent(Agent):
 
             natural_summary = self.generate_natural_language_summary(final_output)
             final_output["natural_summary"] = natural_summary
+
+            job_status["static-track-id"].setdefault("steps", []).append("Final output assembled. Analysis complete.")
+            job_status["static-track-id"]["step"] = "Final output assembled. Analysis complete."
+
             print("🗣️ Doğal dil özeti eklendi.")
 
             print("✅ PDF analiz işlemi tamamlandı.")
             return final_output
 
         except Exception as e:
+            job_status["static-track-id"].setdefault("steps", []).append("Error occurred during PDF analysis.")
+            job_status["static-track-id"]["step"] = "Error occurred during PDF analysis."
             print("🚫 Genel hata:", e)
             raise
         finally:

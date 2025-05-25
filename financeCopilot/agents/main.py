@@ -6,6 +6,8 @@ from agents.normalChatAgent import NormalChatAgent, normalChatAgentRole
 from agents.orcestratorAgent import Orcestrator, orcestratorAgentRole, agents
 from agents.lifePlannerAgent import LifePlannerAgent, lifePlannerAgentRole
 from agents.budgetPlannerAgent import BudgetPlannerAgent, budgetPlannerAgentRole
+from agents.investmentAdvisorAgent import InvestmentAdvisorAgent, investmentAdvisorAgentRole
+from agents.job_tracking import job_status
 import asyncio
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -14,7 +16,6 @@ import uuid
 
 app = Flask(__name__)
 
-job_status = {}
 
 # More permissive CORS configuration
 CORS(
@@ -59,6 +60,8 @@ def handle_user_input():
             return jsonify({"success": False, "track_id": None, "message": "Message or file is required"}), 400
 
         track_id = "static-track-id"
+        if track_id in job_status:
+            del job_status[track_id]
         job_status[track_id] = {"status": "processing", "step": "routing to agent", "user_input": user_text}
 
         agent_key = orchestrator.get_agent_key(user_text).lower()

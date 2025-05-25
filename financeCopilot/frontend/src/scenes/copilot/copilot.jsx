@@ -41,6 +41,10 @@ const Copilot = () => {
   const [sources, setSources] = useState(null);
   const [showSources, setShowSources] = useState(false);
   const [trackingStep, setTrackingStep] = useState(null);
+  const [stepHistory, setStepHistory] = useState([]);
+  const [displayedSteps, setDisplayedSteps] = useState([]);
+  const stepIndexRef = useRef(0);
+  const [trackingActive, setTrackingActive] = useState(false);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -58,20 +62,26 @@ const Copilot = () => {
 
   // Polling static job status for tracking step
   useEffect(() => {
+    if (!trackingActive) return;
+
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(
-          `http://localhost:5001/job-status/static-track-id`
-        );
+        const res = await fetch("http://localhost:5001/job-status/static-track-id");
         const data = await res.json();
 
-        if (data?.success && data.status?.step) {
-          setTrackingStep(data.status.step);
+        if (data?.success) {
+          if (data.status?.step) {
+            setTrackingStep(data.status.step);
+          }
+          if (Array.isArray(data.status?.steps)) {
+            setStepHistory(data.status.steps);
+          }
         }
 
         if (data?.status?.status === "done" || data?.status?.status === "failed") {
           clearInterval(interval);
           setTrackingStep(null);
+          setTrackingActive(false);
         }
       } catch (err) {
         console.error("Polling error:", err);
@@ -79,7 +89,28 @@ const Copilot = () => {
     }, 1500);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [trackingActive]);
+
+  // Animate step display when stepHistory updates
+  useEffect(() => {
+    if (!stepHistory || stepHistory.length === 0) return;
+
+    const interval = setInterval(() => {
+      setDisplayedSteps((prev) => {
+        const nextIndex = stepIndexRef.current;
+        if (nextIndex < stepHistory.length) {
+          const updated = [...prev, stepHistory[nextIndex]];
+          stepIndexRef.current += 1;
+          return updated;
+        } else {
+          clearInterval(interval);
+          return prev;
+        }
+      });
+    }, 1200);
+
+    return () => clearInterval(interval);
+  }, [stepHistory]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -94,7 +125,14 @@ const Copilot = () => {
     setLoading(true);
     scrollToBottom();
 
+    // Insert delayedBotMsg variable
+    let delayedBotMsg = "";
+
     try {
+      setTrackingActive(true);
+      setStepHistory([]);
+      setDisplayedSteps([]);
+      stepIndexRef.current = 0;
       const response = await sendCopilotMessage(input, selectedFile);
       console.log("Response from backend:", response); // Debug log
 
@@ -210,7 +248,8 @@ ${res.lifePlan.recommendations.map((r) => `- ${r}`).join("\n")}
         setSources(null);
       }
 
-      setMessages((prev) => [...prev, { sender: "ai", text: botMsg }]);
+      // Instead of sending the message here, assign to delayedBotMsg
+      delayedBotMsg = botMsg;
     } catch (error) {
       if (error instanceof Error) {
         console.error("Error in handleSendMessage:", error.message);
@@ -229,6 +268,12 @@ ${res.lifePlan.recommendations.map((r) => `- ${r}`).join("\n")}
     } finally {
       setLoading(false);
       setSelectedFile(null);
+      // After try, in finally, send delayedBotMsg with a delay if it exists
+      if (delayedBotMsg) {
+        setTimeout(() => {
+          setMessages((prev) => [...prev, { sender: "ai", text: delayedBotMsg }]);
+        }, stepHistory.length * 1200 + 500);
+      }
     }
   };
 
@@ -368,13 +413,13 @@ ${res.lifePlan.recommendations.map((r) => `- ${r}`).join("\n")}
           }}
         >
           {messages.map(renderMessage)}
-          {trackingStep && (
-            <Box sx={{ display: "flex", justifyContent: "flex-start", px: 2 }}>
+          {displayedSteps.map((step, idx) => (
+            <Box key={idx} sx={{ display: "flex", justifyContent: "flex-start", px: 2 }}>
               <Typography variant="body2" color="text.secondary">
-                🧠 {trackingStep} 
+                🧠 {step}
               </Typography>
             </Box>
-          )}
+          ))}
           {loading && (
             <Box sx={{ display: "flex", justifyContent: "center", py: 1 }}>
               <CircularProgress size={24} />
@@ -554,3 +599,5 @@ ${res.lifePlan.recommendations.map((r) => `- ${r}`).join("\n")}
 };
 
 export default Copilot;
+
+  
