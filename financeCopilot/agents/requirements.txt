@@ -1,36 +1,40 @@
-# Google Gemini
+# Google Gemini & Language Models
 google-generativeai>=0.4.0
+langdetect>=1.0.9
 
-# Ortam değişkenleri
+# Environment Variables
 python-dotenv>=1.0.1
 
-# PDF oluşturma ve grafik
+# PDF, OCR & Image Processing
+pdfplumber>=0.10.3
+PyMuPDF>=1.23.9
 fpdf==1.7.2
-matplotlib>=3.7.1
+pillow>=9.5.0
+pytesseract>=0.3.10
 
-# JSON işleme ve debugging (opsiyonel)
+# JSON & Debugging
 orjson>=3.9.7
 rich>=13.7.0
 
-# OCR ve Görüntü İşleme
-pillow
-pytesseract
+# Web Frameworks
+flask>=2.3.3
+flask_cors>=4.0.0
+fastapi>=0.110.0
+httpx>=0.27.0
+requests>=2.31.0
 
-# PDF & OCR
-pdfplumber
-PyMuPDF
+# Plotting / Charts
+matplotlib>=3.7.1
 
-# Web istekleri
-requests
-httpx
-flask
-fastapi
-flask_cors
+# Testing / UI
+gradio>=4.19.0
 
-# Dil algılama
-langdetect
+# Vector Search & Database
+pymongo>=4.7.0
+bson>=0.5.10  # Not always needed, but sometimes used standalone
 
-# Test/arayüz
-gradio
+# Financial Data (Finnhub)
+finnhub-python>=2.4.20
 
-finnhub-python
+# Utility
+numpy>=1.26.0
