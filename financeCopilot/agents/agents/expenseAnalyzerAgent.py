@@ -22,66 +22,67 @@ Instructions:
    - spending_category (must match one of the given categories)
    - description (clean and readable wording with proper spacing)
    - amount
-4. Format descriptions by inserting appropriate spaces between merged words, brand names, and locations. For example:
-   "MIGROSZIYAGOKALPANKARATR" should become "MIGROS ZIYA GOKALP ANKARA TR".
-5. **Exclude any transactions related to reward points**. That means:
+   - flow
+4. Format descriptions by inserting appropriate spaces between merged words, brand names, and locations.
+   For example: "MIGROSZIYAGOKALPANKARATR" → "MIGROS ZIYA GOKALP ANKARA TR"
+5. Exclude any transactions related to reward points:
    - If a transaction includes words like "puan", "PUAN", or "MaxiPuan" in the description,
-   - Do not include this transaction in the final JSON output.
+   - Do not include it in the final JSON output.
 6. In "card_limit", include only:
    - total_card_limit
    - remaining_card_limit
 7. Categorize totals under the given list of categories based on transaction type.
 8. Use null for any missing or unknown values.
 9. Output must be valid, properly formatted JSON.
-10. Exclude all transactions that are **point-related financial operations** — that is, when the transaction itself is a reward point usage or a point top-up. 
-These transactions must be **excluded from the output** entirely.
-11. Don't forget that such as -100,00 TL is negative amount ant it should be treated like expense/spending/payment.
+10. Exclude all transactions that are **point-related financial operations** (e.g. point usage or loading).
+11. If a transaction amount is negative (e.g. -100,00 TL), it represents spending.
 12. All "amount" fields must be positive values. Do not include any minus signs.
-13. Add a new field to each transaction named "flow". Use "spending" if the transaction is an expense (originally negative amount), or "income" if it is a refund or incoming money (originally positive).
+13. Add a field called "flow" to each transaction:
+   - Use "spending" for originally negative amounts
+   - Use "income" for originally positive amounts
 
-Examples of such operations to exclude:
+Examples of operations to exclude:
 - Point usage:
-  - "MaxiPuan Used"
-  - "KULLANILAN PUAN"
-  - "PUAN USED"
-  - "REWARD POINT REDEEMED"
-  - "-80,45 TL" with reference to point usage
+  - "MaxiPuan Used", "KULLANILAN PUAN", "REWARD POINT REDEEMED"
 - Point top-ups:
-  - "%50 PUAN YÜKLEME"
-  - "MAXIMUM GENÇ MARKET PUAN"
-  - "BONUS YÜKLEME"
-  - "PUAN YÜKLEME"
-  - "REWARD POINT ADDED"
-  - Any transaction that indicates loading or redeeming points instead of spending money.
+  - "PUAN YÜKLEME", "REWARD POINT ADDED", "BONUS YÜKLEME", "%50 PUAN YÜKLEME"
 
-**Important**: These are not real spending and should be skipped entirely.
+These are not real spending and must be excluded.
 
-14. For normal purchase transactions that **mention earned reward points**, such as:
-  - "KAZANILANMAXİPUAN: 0,02"
-  - "EARNED REWARD POINTS: 0.05"
-  - "KAZANILAN PUAN"
-  - "BONUS KAZANIMI"
-
-Include these transactions, but **remove any reward point references** from the `description` field.  
-The description should only contain relevant and clean purchase information (e.g., store name, location, brand, etc.), **not reward metadata**.
+14. For transactions that mention earned points:
+  - e.g. "KAZANILANMAXİPUAN: 0,02" or "EARNED REWARD POINTS: 0.05"
+  - Keep the transaction, but remove point references from the `description`.
 
 Examples:
 - "CHILLINCAFEANKARATR KAZANILANMAXİPUAN:0,02" → "CHILLIN CAFE ANKARA TR"
 - "BIM A.S./U633/EMEK4 //ANKARATR KAZANILAN PUAN: 0.15" → "BIM A.S./U633/EMEK4 //ANKARA TR"
 
-15. Exclude transactions that represent **money transfers** or account operations — these are not actual spending.
+15. Exclude transactions that represent internal account operations or movement:
+  - e.g. descriptions including: "HESAPTAN AKTARIM", "ACCOUNT MOVEMENT", "MONEY MOVEMENT"
+  - These are not real spending or income.
 
-Examples of such transactions to exclude:
-- Any description that includes:
-  - "HESAPTAN AKTARIM"
-  - "TRANSFER"
-  - "HAVALE"
-  - "EFT"
-  - "FAST"
-  - "PARA AKTARIMI"
-  - "MONEY MOVEMENT"
-- These are internal account actions and should **not** be included in the `transactions` list.
+16. Regarding income (incoming money) transactions:
 
+  All transactions with a **positive amount** (e.g. +1.000,00 TL) must be included as `flow: "income"`.
+
+  This includes:
+  - Salaries: "MAAŞ", "Maaş Ödemesi"
+  - Scholarships: "BURS", "BURSU"
+  - Refunds: "İADE", "IYZICO", "TEMU", "RETURN", "REFUND", etc.
+  - Deposits, incoming transfers: "FAST", "EFT", "TRANSFER", "HAVALE", "QR ILE PARA YATIRMA", etc.
+
+  Even if the description contains "FAST", "TRANSFER", or similar keywords, 
+  if the amount is positive, treat it as valid income.
+
+  Do not exclude any transaction with a positive amount under any condition.
+
+Examples of valid income:
+- "MAAŞ ÖDEMESİ Maaş  +400,00 TL"
+- "İLİM YAYMA CEMİYETİ BURS  +1.000,00 TL"
+- "İADE -517040*7261-İYZİCO /S/TEMU  +321,78 TL"
+- "FAST859190238-PELİN HAMDEMİR- Para Transferi  +500,00 TL"
+- "CEP ŞUBE - HVL - EMİR BOZKURT  +5.000,00 TL"
+- "QR ILE PARA YATIRMA-00082CRS003  +1.200,00 TL"
 
 Allowed spending categories: {spendingCategories}
 
@@ -89,22 +90,22 @@ Example Target JSON Structure:
 {{
   "type": "receipt/invoice/account statement",
   "customer_info": {{
-    "full_name": "Name Surname",
+    "full_name": "Name Surname"
   }},
   "transactions": [
     {{
       "date": "DD/MM/YYYY",
       "spending_category": "groceries",
       "description": "Place Name City Country",
-      "amount": "-1.000,00 TL",
-      "flow": "spending"
+      "amount": "1.000,00 TL",
+      "flow": "income"
     }},
     {{
       "date": "DD/MM/YYYY",
       "spending_category": "groceries",
       "description": "Place Name City Country",
-      "amount": "1.000,00 TL",
-      "flow": "income" 
+      "amount": "500,00 TL",
+      "flow": "spending"
     }}
     ...
   ],
@@ -117,12 +118,9 @@ Example Target JSON Structure:
     ...
   }}
 }}
-
- #Important notes:
-- "+" Amount values should be treated as income, and should be labeled as "income" in the `flow` field.
-- "-" Amount values should be treated as expenses, and should be labeled as "spending" in the `flow` field.
-
 """
+
+
 
 class ExpenseAnalyzerAgent(Agent):
 
