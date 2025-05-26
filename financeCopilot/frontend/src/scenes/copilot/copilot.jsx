@@ -49,6 +49,7 @@ const Copilot = () => {
   const [visibleSteps, setVisibleSteps] = useState([]);
   const lastDisplayedIndexRef = useRef(0);
   const [trackingActive, setTrackingActive] = useState(false);
+  const [tokenCost, setTokenCost] = useState(null);
 
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -89,6 +90,9 @@ const Copilot = () => {
               );
               return [...prev, ...newSteps];
             });
+          }
+          if (data.status?.cost) {
+            setTokenCost(data.status.cost);
           }
         }
 
@@ -153,6 +157,7 @@ const Copilot = () => {
       setVisibleSteps([]);
       setTrackingStep(null);
       setTrackingActive(true);
+      setTokenCost(null);
       const response = await sendCopilotMessage(input, selectedFile);
       console.log("Response from backend:", response);
 
@@ -667,6 +672,29 @@ ${res.lifePlan.recommendations.map((r) => `- ${r}`).join("\n")}
           >
             🔄 {trackingStep}
           </Typography>
+        )}
+        {/* Token Cost Display */}
+        {tokenCost && (
+          <Box
+            sx={{
+              mt: 2,
+              p: 1,
+              backgroundColor: colors.primary[600],
+              borderRadius: 1,
+              fontSize: "0.75rem",
+              whiteSpace: "pre-wrap",
+              color: colors.greenAccent[400],
+              border: `1px solid ${colors.greenAccent[500]}`,
+            }}
+          >
+            💰 Token Cost Summary
+            <br />
+            Input Tokens: {tokenCost.input_tokens}
+            <br />
+            Output Tokens: {tokenCost.output_tokens}
+            <br />
+            Total Cost: ${tokenCost.total_cost_usd}
+          </Box>
         )}
       </Box>
     </Box>

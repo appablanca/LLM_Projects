@@ -258,7 +258,14 @@ User Profile:
             job_status["static-track-id"]["step"] = "Calling Agent to generate financial life plan..."
 
             response = self.model.generate_content(prompt)
-
+            if hasattr(response, "usage_metadata"): 
+                usage = response.usage_metadata
+                input_tokens = usage.prompt_token_count
+                output_tokens = usage.candidates_token_count
+                token_cost = self.calculate_token_cost(input_tokens, output_tokens)
+                job_status["static-track-id"]["cost"] = token_cost
+            
+            
             parsed_response = json.loads(response.text.strip())
             job_status["static-track-id"].setdefault("steps", []).append("Gemini response received. Post-processing results...")
             job_status["static-track-id"]["step"] = "Gemini response received. Post-processing results..."

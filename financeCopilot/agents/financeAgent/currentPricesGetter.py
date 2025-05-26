@@ -16,7 +16,7 @@ def get_current_market_prices_fast(file_path: str):
         period="1d",
         interval="1m",  
         group_by="ticker",
-        threads=True,
+        # threads=True,
         progress=False
     )
 

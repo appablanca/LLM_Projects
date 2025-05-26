@@ -9,6 +9,23 @@ import { getTransactions } from "../../util/api";
 import SpendingPieChart from "../../components/SpendingPieChart";
 import FinancialHealthCircleCard from "../../components/FinancialHealthCircleCard";
 import { getBudget } from "../../util/api";
+import axios from "axios";
+
+const runMarketPricePrefetchOnce = () => {
+  if (sessionStorage.getItem("marketPricesFetched") === "true") return;
+
+  fetch("http://localhost:5001/market-prices")
+    .then((res) => res.json())
+    .then((data) => {
+      console.log("Market Prices Fetched (from external trigger):", data);
+      sessionStorage.setItem("marketPricesFetched", "true");
+    })
+    .catch((error) => {
+      console.error("Failed to fetch market prices from prefetch:", error);
+    });
+};
+
+runMarketPricePrefetchOnce();
 
 const Dashboard = () => {
   const theme = useTheme();
@@ -47,7 +64,7 @@ const Dashboard = () => {
     };
     fetchBudgetData();
   }, []);
-
+  
   useEffect(() => {
     const fetchData = async () => {
       try {

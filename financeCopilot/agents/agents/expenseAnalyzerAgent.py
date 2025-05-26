@@ -214,11 +214,16 @@ class ExpenseAnalyzerAgent(Agent):
             all_transactions = []
             first_card_limit = None
             first_customer_info = None
-
+            total_input_tokens = 0
+            total_output_tokens = 0
             for i, chunk in enumerate(chunks):
                 print(f"🤖 Gemini ile işleniyor: Parça {i+1}/{len(chunks)}")
                 response = self.json_model.generate_content("Şu metni dönüştür:\n" + chunk)
-
+                # Token kullanımını topla
+                if hasattr(response, "usage_metadata"):
+                    usage = response.usage_metadata
+                    total_input_tokens += usage.prompt_token_count
+                    total_output_tokens += usage.candidates_token_count
                 #DEBUG LOG!
                 #print("📤 Gemini yanıtı:")
                 #print(repr(response.text))
@@ -308,10 +313,15 @@ class ExpenseAnalyzerAgent(Agent):
 
             job_status["static-track-id"].setdefault("steps", []).append("Final output assembled. Analysis complete.")
             job_status["static-track-id"]["step"] = "Final output assembled. Analysis complete."
+                        # Token cost hesaplama ve ekleme
+           
 
             print("✅ PDF analiz işlemi tamamlandı.")
             job_status["static-track-id"].setdefault("steps", []).append("Construction complete.")
-            job_status["static-track-id"]["step"] = "Construction complete."
+            job_status["static-track-id"]["step"] = "Construction complete."    
+            # Token cost hesapla
+            token_cost = self.calculate_token_cost(total_input_tokens, total_output_tokens)
+            job_status["static-track-id"]["cost"] = token_cost
 
             return final_output
 

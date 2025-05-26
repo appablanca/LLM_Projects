@@ -30,3 +30,18 @@ class Agent:
         response = self.model.generate_content(prompt)
         print(f"🧾 Raw response from {self.name}:\n{response.text[:500]}...")
         return response.text.strip()
+
+    # ➕ Token bazlı maliyet hesaplama fonksiyonu
+    @staticmethod
+    def calculate_token_cost(input_tokens, output_tokens):
+        cost_input = (input_tokens / 1_000_000) * 0.10
+        cost_output = (output_tokens / 1_000_000) * 0.40
+        total_cost = cost_input + cost_output
+        return {
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "input_cost_usd": round(cost_input, 6),
+            "output_cost_usd": round(cost_output, 6),
+            "total_cost_usd": round(total_cost, 6),
+        }
+

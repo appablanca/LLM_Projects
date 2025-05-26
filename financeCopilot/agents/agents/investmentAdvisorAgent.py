@@ -229,7 +229,13 @@ News URL: {", ".join(news_summary.get("URL", []))}
         job_status["static-track-id"].setdefault("steps", []).append("Generating investment advice using Gemini...")
         job_status["static-track-id"]["step"] = "Generating investment advice using Gemini..."
         print(prompt)
-        response = self.generate_response(prompt)
+        response = self.model.generate_content(prompt)
+        if hasattr(response, "usage_metadata"): 
+            usage = response.usage_metadata
+            input_tokens = usage.prompt_token_count
+            output_tokens = usage.candidates_token_count
+            token_cost = self.calculate_token_cost(input_tokens, output_tokens)
+            job_status["static-track-id"]["cost"] = token_cost    
         job_status["static-track-id"].setdefault("steps", []).append("Construction complete.")
         job_status["static-track-id"]["step"] = "Construction complete."
-        return json.loads(response)
+        return json.loads(response.text.strip())
