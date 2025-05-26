@@ -1,6 +1,6 @@
 const WebSocket = require("ws");
 
-const finnhubApiKey = process.env.FINNHUB_API_KEY;
+const finnhubApiKey = "d0o8uvpr01qu236163vgd0o8uvpr01qu23616400";
 const finnhubUrl = "wss://ws.finnhub.io?token=" + finnhubApiKey;
 const server = new WebSocket.Server({ port: 8081 });
 

@@ -79,7 +79,7 @@ budgetPlannerAgentRole = """
   ],
   "improvement_recommendations": [
     "On 08.03.2025, 03.02.2025 (You should mention all transaction dates of this spending if it occured more than once), you spent 181.95 TL on a taxi. Consider using public transport to save money."
-  ]
+  ],
   "Transaction_references": [
     " transaction_id_1",
     " transaction_id_6",]
@@ -383,8 +383,6 @@ class BudgetPlannerAgent(Agent):
 
 == Relevant Transactions (via Vector Search) ==
 {json.dumps(relevant_txns, indent=2)}
-
-
 
 ...
 """
