@@ -1,4 +1,5 @@
-import os, json
+import os
+import json
 import pdfplumber
 import tempfile
 from agents.baseAgent import Agent
@@ -34,7 +35,7 @@ Instructions:
 7. Categorize totals under the given list of categories based on transaction type.
 8. Use null for any missing or unknown values.
 9. Output must be valid, properly formatted JSON.
-10. Exclude all transactions that are **point-related financial operations** (e.g. point usage or loading).
+10. Exclude all transactions that are *point-related financial operations* (e.g. point usage or loading).
 11. If a transaction amount is negative (e.g. -100,00 TL), it represents spending.
 12. All "amount" fields must be positive values. Do not include any minus signs.
 13. Add a field called "flow" to each transaction:
@@ -51,7 +52,7 @@ These are not real spending and must be excluded.
 
 14. For transactions that mention earned points:
   - e.g. "KAZANILANMAXİPUAN: 0,02" or "EARNED REWARD POINTS: 0.05"
-  - Keep the transaction, but remove point references from the `description`.
+  - Keep the transaction, but remove point references from the description.
 
 Examples:
 - "CHILLINCAFEANKARATR KAZANILANMAXİPUAN:0,02" → "CHILLIN CAFE ANKARA TR"
@@ -63,7 +64,7 @@ Examples:
 
 16. Regarding income (incoming money) transactions:
 
-  All transactions with a **positive amount** (e.g. +1.000,00 TL) must be included as `flow: "income"`.
+  All transactions with a *positive amount* (e.g. +1.000,00 TL) must be included as flow: "income".
 
   This includes:
   - Salaries: "MAAŞ", "Maaş Ödemesi"
@@ -83,6 +84,9 @@ Examples of valid income:
 - "FAST859190238-PELİN HAMDEMİR- Para Transferi  +500,00 TL"
 - "CEP ŞUBE - HVL - EMİR BOZKURT  +5.000,00 TL"
 - "QR ILE PARA YATIRMA-00082CRS003  +1.200,00 TL"
+
+!!!!!! MAKE SURE THAT THE OUTPUT IS A VALID JSON STRUCTURE !!!!!!
+!!!!!! DO NOT FORGET TO CLOSE ALL " AND ' QUOTES !!!!!!
 
 Allowed spending categories: {spendingCategories}
 
@@ -115,15 +119,12 @@ Example Target JSON Structure:
   }},
   "category_totals": {{
     "groceries": "1.012,50 TL",
-    ...
-  }}
+    ...
+  }}
 }}
 """
 
-
-
 class ExpenseAnalyzerAgent(Agent):
-
     def __init__(self, name, role):
         super().__init__(name=name, role=role)
 
@@ -150,7 +151,6 @@ class ExpenseAnalyzerAgent(Agent):
             system_instruction=self.role,
         )
 
-# PDF'den metin çıkartır (tüm sayfaları birleştir)
     def extract_text_from_pdf(self, pdf_path: str) -> str:
         print("📄 PDF'den metin çıkarılıyor...")
         all_text = ""
@@ -167,7 +167,6 @@ class ExpenseAnalyzerAgent(Agent):
             print(f"❌ Metin çıkarma hatası: {str(e)}")
             raise
 
-# Uzun metni parçalara böl (LLM token sınırı için)
     def split_text_into_chunks(self, text, max_chars=5000):
         print("✂️ Metin parçalara bölünüyor...")
         chunks = []
@@ -183,15 +182,6 @@ class ExpenseAnalyzerAgent(Agent):
         print(f"📦 {len(chunks)} adet parça oluşturuldu.")
         return chunks
 
-# Ana fonksiyon bu:
-        # - PDF'i geçici klasöre kaydet
-        # - Metni çıkar, parçalara ayır
-        # - Gemini ile her parçayı işle
-        # - Tüm transaction'ları topla
-        # - Miktarları normalize et
-        # - Kategori toplamlarını hesapla
-        # - Doğal dil özeti oluştur
-        # - Final JSON'u döndür
     def categorize_pdf(self, pdf_file) -> dict:
         temp_dir = tempfile.gettempdir()
         temp_path = os.path.join(temp_dir, pdf_file.filename)
@@ -203,18 +193,18 @@ class ExpenseAnalyzerAgent(Agent):
             job_status["static-track-id"].setdefault("steps", []).append("Saving uploaded PDF to temporary directory...")
             job_status["static-track-id"]["step"] = "Saving uploaded PDF to temporary directory..."
 
+            print(f"🗂️ Kaydedilen dosya: {temp_path}")
+
             job_status["static-track-id"].setdefault("steps", []).append("Extracting text from PDF...")
             job_status["static-track-id"]["step"] = "Extracting text from PDF..."
 
-            print(f"🗂️ Kaydedilen dosya: {temp_path}")
-
             text = self.extract_text_from_pdf(temp_path)
-
-            job_status["static-track-id"].setdefault("steps", []).append("Splitting text into chunks for processing...")
-            job_status["static-track-id"]["step"] = "Splitting text into chunks for processing..."
 
             if not text.strip():
                 raise ValueError("📭 PDF boş veya metin içeremiyor.")
+
+            job_status["static-track-id"].setdefault("steps", []).append("Splitting text into chunks for processing...")
+            job_status["static-track-id"]["step"] = "Splitting text into chunks for processing..."
 
             chunks = self.split_text_into_chunks(text, max_chars=5000)
 
@@ -228,21 +218,37 @@ class ExpenseAnalyzerAgent(Agent):
             for i, chunk in enumerate(chunks):
                 print(f"🤖 Gemini ile işleniyor: Parça {i+1}/{len(chunks)}")
                 response = self.json_model.generate_content("Şu metni dönüştür:\n" + chunk)
+
+                if not response.text:
+                     print("⚠️ Uyarı: Boş yanıt döndü. Bu parça atlanacak.")
+                     continue
+
                 try:
                     parsed = json.loads(response.text)
                     print("✅ JSON verisi başarıyla çözüldü.")
                 except Exception as e:
                     print(f"❌ JSON çözümleme hatası: {str(e)}")
                     continue
+                if not parsed or not isinstance(parsed, dict):
+                    print("⚠️ Geçersiz JSON formatı. Atlanıyor...")
+                    continue
 
-                customer = parsed.get("customer_info", {})
-                card = parsed.get("card_limit", {})
-                if not first_customer_info and customer.get("full_name"):
-                    first_customer_info = customer
-                if not first_card_limit and (card.get("total_card_limit") or card.get("remaining_card_limit")):
+                customer = parsed.get("customer_info")
+                if isinstance(customer, dict) and customer.get("full_name") and not first_customer_info:
+                     first_customer_info = customer
+                
+                card = parsed.get("card_limit")
+                if isinstance(card, dict) and (card.get("total_card_limit") or card.get("remaining_card_limit")) and not first_card_limit:
                     first_card_limit = card
 
-                all_transactions.extend(parsed.get("transactions", []))
+
+                
+                transactions = parsed.get("transactions")
+                if transactions and isinstance(transactions, list):
+                     all_transactions.extend(transactions)
+                else:
+                     print(f"⚠️ Uyarı: transactions alanı eksik, None veya liste değil. Parça atlandı.")
+                     continue
 
                 job_status["static-track-id"].setdefault("steps", []).append(f"Chunk {i+1}/{len(chunks)} categorized.")
                 job_status["static-track-id"]["step"] = f"Chunk {i+1}/{len(chunks)} categorized."
@@ -279,9 +285,6 @@ class ExpenseAnalyzerAgent(Agent):
 
             print("📊 Harcama kategorileri hesaplandı.")
 
-            job_status["static-track-id"].setdefault("steps", []).append("Generating natural language summary...")
-            job_status["static-track-id"]["step"] = "Generating natural language summary..."
-
             final_output = {
                 "type": "account statement",
                 "customer_info": first_customer_info or {"full_name": None},
@@ -293,17 +296,13 @@ class ExpenseAnalyzerAgent(Agent):
                 "transactions": all_transactions
             }
 
-            natural_summary = self.generate_natural_language_summary(final_output)
-            final_output["natural_summary"] = natural_summary
-
             job_status["static-track-id"].setdefault("steps", []).append("Final output assembled. Analysis complete.")
             job_status["static-track-id"]["step"] = "Final output assembled. Analysis complete."
 
-            print("🗣️ Doğal dil özeti eklendi.")
-
             print("✅ PDF analiz işlemi tamamlandı.")
             job_status["static-track-id"].setdefault("steps", []).append("Construction complete.")
-            job_status["static-track-id"]["step"] = "Construction complete."      
+            job_status["static-track-id"]["step"] = "Construction complete."
+
             return final_output
 
         except Exception as e:
@@ -311,56 +310,8 @@ class ExpenseAnalyzerAgent(Agent):
             job_status["static-track-id"]["step"] = "Error occurred during PDF analysis."
             print("🚫 Genel hata:", e)
             raise
+
         finally:
             if os.path.exists(temp_path):
                 os.remove(temp_path)
                 print("🧹 Geçici dosya silindi.")
-
- # Kategorilere göre Türkçe doğal özet üretiyor
-    def generate_natural_language_summary(self, final_output: dict) -> str:
-        try:
-            customer_name = final_output.get("customer_info", {}).get("full_name", "müşteri")
-            category_totals = final_output.get("category_totals", {})
-
-            if not category_totals:
-                return "Harcama kategorisi bulunamadı."
-
-            category_emojis = {
-                "food_drinks": "🍽️",
-                "clothing_cosmetics": "👗",
-                "subscription": "📺",
-                "groceries": "🛒",
-                "transportation": "🚌",
-                "entertainment": "🎭",
-                "stationery_books": "📚",
-                "technology": "💻",
-                "bill_payment": "💡",
-                "education": "🎓",
-                "health": "🏥",
-                "cash_withdrawal": "💵",
-                "other": "🔧"
-            }
-
-            prompt = f"""
-Aşağıdaki müşteri bilgisine ve harcama özetine göre, Türkçe olarak saygılı ve doğal bir dille bir özet yaz:
-1. Müşteri adı: {customer_name}
-2. Harcama kategorileri ve tutarlar (emoji destekli):
-"""
-            for category, amount in category_totals.items():
-                emoji = category_emojis.get(category, "")
-                prompt += f"- {emoji} {category.replace('_', ' ').title()}: {amount}\n"
-
-            prompt += """
-Metin şöyle başlamalı: "Sayın [Ad Soyad], hesap dökümünüzü inceledim. Analizlerime göre şu kategorilerde şu kadar harcama yapmışsınız:"
-"""
-
-            response = self.generate_response(prompt)
-            #print("🧠 Doğal dil özeti üretildi.")
-            return json.loads(response)  # ya da .text yerine .text.strip() doğrudan da yazılabilir
-        except Exception as e:
-            #print("❌ Özet oluşturulurken hata:", e)
-            return "Özet oluşturulurken bir hata oluştu."
-
-        except Exception as e:
-            print("❌ Özet oluşturulurken hata:", e)
-            return "Özet oluşturulurken bir hata oluştu."
