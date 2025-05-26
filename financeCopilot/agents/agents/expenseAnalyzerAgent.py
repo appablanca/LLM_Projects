@@ -354,10 +354,13 @@ Aşağıdaki müşteri bilgisine ve harcama özetine göre, Türkçe olarak sayg
 Metin şöyle başlamalı: "Sayın [Ad Soyad], hesap dökümünüzü inceledim. Analizlerime göre şu kategorilerde şu kadar harcama yapmışsınız:"
 """
 
-            response = self.text_model.generate_content(prompt)
-            summary_text = response.text  # metni çıkar
-            print("🧠 Doğal dil özeti üretildi.")
-            return summary_text.strip()  # ya da .text yerine .text.strip() doğrudan da yazılabilir
+            response = self.generate_response(prompt)
+            #print("🧠 Doğal dil özeti üretildi.")
+            return json.loads(response)  # ya da .text yerine .text.strip() doğrudan da yazılabilir
+        except Exception as e:
+            #print("❌ Özet oluşturulurken hata:", e)
+            return "Özet oluşturulurken bir hata oluştu."
+
         except Exception as e:
             print("❌ Özet oluşturulurken hata:", e)
             return "Özet oluşturulurken bir hata oluştu."
