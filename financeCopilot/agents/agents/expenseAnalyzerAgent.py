@@ -355,9 +355,9 @@ Metin şöyle başlamalı: "Sayın [Ad Soyad], hesap dökümünüzü inceledim. 
 """
 
             response = self.text_model.generate_content(prompt)
+            summary_text = response.text  # metni çıkar
             print("🧠 Doğal dil özeti üretildi.")
-            return response.text.strip()
-
+            return summary_text.strip()  # ya da .text yerine .text.strip() doğrudan da yazılabilir
         except Exception as e:
             print("❌ Özet oluşturulurken hata:", e)
             return "Özet oluşturulurken bir hata oluştu."
