@@ -15,6 +15,7 @@ import { WebSocketContext } from "../../context/WebSocketContext";
 
 const Invesment = () => {
   const [trackedStocks, setTrackedStocks] = useState([]);
+  const [marketOpen, setMarketOpen] = useState(true);
   const livePricesRef = useRef({});
   const priceFlashMap = useRef({});
   const previousClosesRef = useRef({});
@@ -23,12 +24,22 @@ const Invesment = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
-  useEffect(() => {
-    fetchTrackedStocks();
-  }, []);
+  const fetchMarketStatus = async () => {
+    try {
+      const response = await fetch("https://finnhub.io/api/v1/stock/market-status?exchange=US&token=d0mpdvhr01qi78ngcl50d0mpdvhr01qi78ngcl5g");
+      const data = await response.json();
+      console.log("Market status fetched:", data);
+      return data?.isOpen;
+    } catch (error) {
+      console.error("Failed to fetch market status:", error);
+      return null;
+    }
+  };
 
   const fetchTrackedStocks = async () => {
     try {
+      const marketStatus = await fetchMarketStatus();
+      setMarketOpen(marketStatus);
       const response = await getUserStocks();
       setTrackedStocks((response || []).map(item => item.content));
       // Populate previous close prices for each symbol
@@ -47,7 +58,9 @@ const Invesment = () => {
     }
   };
   const getFormattedPriceDisplay = (symbol) => {
-    const current = livePricesRef.current[symbol];
+    const current = marketOpen
+      ? livePricesRef.current[symbol]
+      : previousClosesRef.current[symbol];
     const prev = previousClosesRef.current[symbol];
     if (current === undefined || prev === undefined) return "Fiyat bekleniyor...";
 
@@ -82,18 +95,28 @@ const Invesment = () => {
         <Typography variant="body2" sx={{ color }}>
           {prefix} {Math.abs(pct)}% ({diff >= 0 ? "+" : ""}${Math.abs(diff).toFixed(2)})
         </Typography>
+        {!marketOpen && (
+          <Typography variant="caption" sx={{ color: colors.grey[400], fontStyle: "italic" }}>
+            Market Kapalı
+          </Typography>
+        )}
       </>
     );
   };
 
   useEffect(() => {
+    fetchTrackedStocks();
+  }, []);
+
+  useEffect(() => {
+    if (!marketOpen) return;
     if (connected && trackedStocks.length > 0 && ws) {
       ws.send(JSON.stringify({ type: "subscribe", symbols: trackedStocks }));
     }
-  }, [connected, trackedStocks]);
+  }, [connected, trackedStocks, marketOpen]);
 
   useEffect(() => {
-    if (!ws) return;
+    if (!marketOpen || !ws) return;
     const handleMessage = (event) => {
       try {
         const updates = JSON.parse(event.data);
@@ -130,7 +153,7 @@ const Invesment = () => {
     return () => {
       ws.removeEventListener("message", handleMessage);
     };
-  }, [ws]);
+  }, [ws, marketOpen]);
 
 
   return (
