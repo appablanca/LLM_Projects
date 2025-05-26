@@ -219,16 +219,26 @@ class ExpenseAnalyzerAgent(Agent):
                 print(f"🤖 Gemini ile işleniyor: Parça {i+1}/{len(chunks)}")
                 response = self.json_model.generate_content("Şu metni dönüştür:\n" + chunk)
 
+                #DEBUG LOG!
+                #print("📤 Gemini yanıtı:")
+                #print(repr(response.text))
+
                 if not response.text:
                      print("⚠️ Uyarı: Boş yanıt döndü. Bu parça atlanacak.")
                      continue
 
-                try:
-                    parsed = json.loads(response.text)
-                    print("✅ JSON verisi başarıyla çözüldü.")
-                except Exception as e:
-                    print(f"❌ JSON çözümleme hatası: {str(e)}")
-                    continue
+                # 1. Eğer response.text gerçekten bir string ise:
+                if isinstance(response.text, str):
+                    try:
+                        parsed = json.loads(response.text)
+                    except Exception as e:
+                        print(f"❌ JSON çözümleme hatası: {str(e)}")
+                        continue
+
+                # 2. Eğer response.text zaten dict gibi görünüyorsa (örneğin response json geliyor olabilir):
+                elif isinstance(response.text, dict):
+                    parsed = response.text
+
                 if not parsed or not isinstance(parsed, dict):
                     print("⚠️ Geçersiz JSON formatı. Atlanıyor...")
                     continue
