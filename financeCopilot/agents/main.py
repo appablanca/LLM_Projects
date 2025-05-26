@@ -110,8 +110,31 @@ def handle_user_input():
 
             # Step 2: Get final natural language response from orchestrator
             final_response = orchestrator.generate_final_response(user_text, result)
-            parsed_response = json.loads(final_response)
-            extra_parsed= json.loads(parsed_response["agent_response"])
+            print(f"📦 Raw orchestrator response: {final_response}")
+
+            if not final_response:
+                return jsonify({"success": False, "message": "Orchestrator failed to generate final response"}), 500
+
+            try:
+                if isinstance(final_response, str):
+                    parsed_response = json.loads(final_response)
+                else:
+                    parsed_response = final_response
+
+                agent_resp = parsed_response.get("agent_response")
+                if isinstance(agent_resp, str):
+                    extra_parsed = json.loads(agent_resp)
+                else:
+                    extra_parsed = agent_resp
+            except Exception as parse_err:
+                print(f"🧨 JSON parse error: {parse_err}")
+                print(f"📝 Raw final_response: {final_response}")
+                return jsonify({
+                    "success": False,
+                    "message": "Final response could not be parsed",
+                    "error": str(parse_err),
+                }), 500
+
             return jsonify({"success": True, "response": extra_parsed})
 
 

@@ -10,6 +10,7 @@ import {
   Tooltip,
   useTheme,
   Dialog,
+  Divider,
 } from "@mui/material";
 
 import {
@@ -45,13 +46,12 @@ const Copilot = () => {
   const [displayedSteps, setDisplayedSteps] = useState([]);
   // Custom deduplicated steps state
   const [customStepHistory, setCustomStepHistory] = useState([]);
+  const [visibleSteps, setVisibleSteps] = useState([]);
   const lastDisplayedIndexRef = useRef(0);
   const [trackingActive, setTrackingActive] = useState(false);
+
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
-  // New state and ref for delayed message logic
-  const [readyToShowFinalMessage, setReadyToShowFinalMessage] = useState(false);
-  const delayedBotMsgRef = useRef("");
 
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -81,12 +81,13 @@ const Copilot = () => {
             setTrackingStep(data.status.step);
           }
           if (Array.isArray(data.status?.steps)) {
-            // Use deduplicated step history
+            // Deduplicate and accumulate step history
             setCustomStepHistory((prev) => {
+              // Combine existing and new, deduplicate
               const newSteps = data.status.steps.filter(
                 (step) => !prev.includes(step)
               );
-              return newSteps.length > 0 ? [...prev, ...newSteps] : prev;
+              return [...prev, ...newSteps];
             });
           }
         }
@@ -107,70 +108,32 @@ const Copilot = () => {
     return () => clearInterval(interval);
   }, [trackingActive]);
 
-  // Animate step display when customStepHistory updates (only show new steps, remember last displayed index)
+  // Gradually reveal steps in process tracker
   useEffect(() => {
-    if (!customStepHistory || customStepHistory.length === 0) return;
+    if (customStepHistory.length === 0) return;
+
+    let stepIndex = visibleSteps.length;
+
+    if (stepIndex >= customStepHistory.length) return;
 
     const interval = setInterval(() => {
-      setDisplayedSteps((prev) => {
-        if (lastDisplayedIndexRef.current < customStepHistory.length) {
-          const nextStep = customStepHistory[lastDisplayedIndexRef.current];
-          lastDisplayedIndexRef.current += 1;
-
-          const updatedSteps = [...prev, nextStep];
-
-          console.log("🧱 Showing step:", nextStep);
-
-          if (
-            nextStep
-              .replace(/🧠|\s/g, "")
-              .toLowerCase()
-              .includes("constructioncomplete.")
-          ) {
-            console.log(
-              "✅ Construction complete detected. Will trigger final message."
-            );
-            setReadyToShowFinalMessage(true);
-          }
-
-          return updatedSteps;
-        } else {
+      setVisibleSteps((prev) => {
+        const nextStep = customStepHistory[stepIndex];
+        if (!nextStep) {
           clearInterval(interval);
           return prev;
         }
+        stepIndex += 1;
+        return [...prev, nextStep];
       });
-    }, 800);
+
+      if (stepIndex >= customStepHistory.length) {
+        clearInterval(interval);
+      }
+    }, 500);
 
     return () => clearInterval(interval);
   }, [customStepHistory]);
-
-  // Show delayed bot message when ready and message exists
-  useEffect(() => {
-    
-    if (readyToShowFinalMessage && delayedBotMsgRef.current) {
-      console.log("💬 Displaying final bot message:", delayedBotMsgRef.current);
-      setDisplayedSteps([]);
-      setCustomStepHistory([]);
-      setMessages((prev) => {
-        const updated = [
-          ...prev,
-          {
-            sender: "ai",
-            text: delayedBotMsgRef.current || "No message generated.",
-          },
-        ];
-        // Add scroll after DOM updates and clear delayedBotMsgRef
-        setTimeout(() => {
-          messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-          delayedBotMsgRef.current = "";
-        }, 100);
-        return updated;
-      });
-      setTrackingStep(null);
-      setTrackingActive(false);
-      setReadyToShowFinalMessage(false);
-    }
-  }, [readyToShowFinalMessage]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -185,13 +148,11 @@ const Copilot = () => {
     setLoading(true);
     scrollToBottom();
 
-    // Use delayedBotMsgRef for delayed message
-    delayedBotMsgRef.current = "";
-
     try {
+      setCustomStepHistory([]);
+      setVisibleSteps([]);
+      setTrackingStep(null);
       setTrackingActive(true);
-      setStepHistory([]);
-      setDisplayedSteps([]);
       const response = await sendCopilotMessage(input, selectedFile);
       console.log("Response from backend:", response);
 
@@ -199,7 +160,33 @@ const Copilot = () => {
       if (response?.success && response?.response) {
         const res = response.response;
 
-        if (
+        // Insert category_totals emoji summary logic
+        const category_emojis = {
+          food_drinks: "🍽️",
+          clothing_cosmetics: "👗",
+          subscription: "📺",
+          groceries: "🛒",
+          transportation: "🚌",
+          entertainment: "🎭",
+          stationery_books: "📚",
+          technology: "💻",
+          bill_payment: "💡",
+          education: "🎓",
+          health: "🏥",
+          cash_withdrawal: "💵",
+          other: "🔧"
+        };
+
+        if (res.category_totals && typeof res.category_totals === "object") {
+          botMsg =
+            "✅ Hesap dökümünü analiz ettim ve tüm harcamalarını kaydettim.\n\n📊 İşte kategori bazlı harcama özetin:\n\n" +
+            Object.entries(res.category_totals)
+              .map(
+                ([category, amount]) =>
+                  `${category_emojis[category] || "📁"} ${category}: ${amount}`
+              )
+              .join("\n");
+        } else if (
           Array.isArray(res.recommendations) &&
           res.recommendations.length > 0
         ) {
@@ -244,6 +231,7 @@ const Copilot = () => {
           botMsg = `🎯 HEDEF: ${res.lifePlan.goal}
 
 💰 Estimated COST : ${res.lifePlan.estimatedCost}
+
 💼 GENERAL SUMMERY OF PLAN : ${res.lifePlan.generalSummeryOfPlan}
 
 📆 TIMELINE : ${res.lifePlan.timeline}
@@ -307,8 +295,8 @@ ${res.lifePlan.recommendations.map((r) => `- ${r}`).join("\n")}
         setSources(null);
       }
 
-      // Instead of sending the message here, assign to delayedBotMsgRef
-      delayedBotMsgRef.current = botMsg;
+      // Immediately show botMsg
+      setMessages((prev) => [...prev, { sender: "ai", text: botMsg }]);
     } catch (error) {
       if (error instanceof Error) {
         console.error("Error in handleSendMessage:", error.message);
@@ -327,7 +315,6 @@ ${res.lifePlan.recommendations.map((r) => `- ${r}`).join("\n")}
     } finally {
       setLoading(false);
       setSelectedFile(null);
-      // No longer send delayedBotMsg here; handled in useEffect
     }
   };
 
@@ -469,16 +456,6 @@ ${res.lifePlan.recommendations.map((r) => `- ${r}`).join("\n")}
           }}
         >
           {messages.map(renderMessage)}
-          {displayedSteps.map((step, idx) => (
-            <Box
-              key={idx}
-              sx={{ display: "flex", justifyContent: "flex-start", px: 2 }}
-            >
-              <Typography variant="body2" color="text.secondary">
-                🧠 {step}
-              </Typography>
-            </Box>
-          ))}
           {loading && (
             <Box sx={{ display: "flex", justifyContent: "center", py: 1 }}>
               <CircularProgress size={24} />
@@ -653,6 +630,45 @@ ${res.lifePlan.recommendations.map((r) => `- ${r}`).join("\n")}
           </Box>
         </Box>
       </Dialog>
+      {/* Process Tracker Panel */}
+      <Box
+        sx={{
+          width: "250px",
+          maxHeight: "700px",
+          height: "90vh",
+          backgroundColor: colors.primary[700],
+          color: colors.grey[100],
+          overflowY: "auto",
+          borderLeft: `1px solid ${colors.primary[300]}`,
+          borderRadius: 2,
+          p: 2,
+          ml: 2,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <Typography variant="subtitle1" sx={{ mb: 1 }}>
+          Process Tracker
+        </Typography>
+        {visibleSteps.map((step, index) => (
+          <Typography
+            key={index}
+            variant="body2"
+            sx={{ mb: 1, fontSize: "0.8rem", whiteSpace: "pre-wrap" }}
+          >
+            🧠 {step}
+            <Divider />
+          </Typography>
+        ))}
+        {trackingStep && (
+          <Typography
+            variant="body2"
+            sx={{ mt: 1, fontStyle: "italic", fontSize: "0.8rem" }}
+          >
+            🔄 {trackingStep}
+          </Typography>
+        )}
+      </Box>
     </Box>
   );
 };
