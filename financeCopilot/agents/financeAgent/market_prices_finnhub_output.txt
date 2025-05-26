@@ -1,0 +1,504 @@
+MMM: 147.62 $
+AOS: 67.02 $
+ABT: 131.30 $
+ABBV: 183.26 $
+ACN: 309.58 $
+ADBE: 407.69 $
+AMD: 110.31 $
+AES: 9.99 $
+AFL: 102.53 $
+A: 108.53 $
+APD: 269.84 $
+ABNB: 126.72 $
+AKAM: 75.84 $
+ALB: 57.61 $
+ARE: 67.83 $
+ALGN: 170.80 $
+ALLE: 141.31 $
+LNT: 61.72 $
+ALL: 203.24 $
+GOOGL: 168.47 $
+GOOG: 169.59 $
+MO: 59.74 $
+AMZN: Price not available
+AMCR: Price not available
+AEE: Price not available
+AEP: 102.88 $
+AXP: Price not available
+AIG: 81.62 $
+AMT: Price not available
+AWK: Price not available
+AMP: Price not available
+AME: Price not available
+AMGN: Price not available
+APH: 85.55 $
+ADI: Price not available
+ANSS: Price not available
+AON: 356.54 $
+APA: Price not available
+APO: Price not available
+AAPL: Price not available
+AMAT: Price not available
+APTV: Price not available
+ACGL: Price not available
+ADM: Price not available
+ANET: Price not available
+AJG: Price not available
+AIZ: Price not available
+T: Price not available
+ATO: Price not available
+ADSK: Price not available
+ADP: Price not available
+AZO: Price not available
+AVB: Price not available
+AVY: Price not available
+AXON: Price not available
+BKR: Price not available
+BALL: Price not available
+BAC: Price not available
+BAX: Price not available
+BDX: Price not available
+BRK-B: Price not available
+BBY: Price not available
+TECH: Price not available
+BIIB: Price not available
+BLK: Price not available
+BX: Price not available
+BK: Price not available
+BA: Price not available
+BKNG: 5332.80 $
+BSX: Price not available
+BMY: Price not available
+AVGO: 228.72 $
+BR: Price not available
+BRO: Price not available
+BF-B: Price not available
+BLDR: Price not available
+BG: Price not available
+BXP: 64.61 $
+CHRW: Price not available
+CDNS: Price not available
+CZR: 27.69 $
+CPT: Price not available
+CPB: Price not available
+COF: Price not available
+CAH: Price not available
+KMX: Price not available
+CCL: Price not available
+CARR: Price not available
+CAT: Price not available
+CBOE: Price not available
+CBRE: Price not available
+CDW: Price not available
+COR: 292.35 $
+CNC: Price not available
+CNP: Price not available
+CF: Price not available
+CRL: Price not available
+SCHW: Price not available
+CHTR: 406.36 $
+CVX: Price not available
+CMG: 50.63 $
+CB: 286.10 $
+CHD: 95.94 $
+CI: 315.99 $
+CINF: Price not available
+CTAS: 222.29 $
+CSCO: 63.11 $
+C: 73.09 $
+CFG: Price not available
+CLX: 130.88 $
+CME: Price not available
+CMS: 69.65 $
+KO: 71.77 $
+CTSH: 79.12 $
+CL: 92.59 $
+CMCSA: Price not available
+CAG: 22.40 $
+COP: 85.19 $
+ED: 104.10 $
+STZ: Price not available
+CEG: Price not available
+COO: 78.83 $
+CPRT: 53.67 $
+GLW: 48.36 $
+CPAY: 324.31 $
+CTVA: 69.06 $
+CSGP: Price not available
+COST: Price not available
+CTRA: Price not available
+CRWD: 455.59 $
+CCI: Price not available
+CSX: Price not available
+CMI: Price not available
+CVS: Price not available
+DHR: Price not available
+DRI: Price not available
+DVA: Price not available
+DAY: Price not available
+DECK: 101.05 $
+DE: Price not available
+DELL: Price not available
+DAL: Price not available
+DVN: Price not available
+DXCM: 84.51 $
+FANG: Price not available
+DLR: Price not available
+DFS: Price not available
+DG: Price not available
+DLTR: Price not available
+D: Price not available
+DPZ: Price not available
+DASH: Price not available
+DOV: Price not available
+DOW: Price not available
+DHI: Price not available
+DTE: Price not available
+DUK: Price not available
+DD: Price not available
+EMN: Price not available
+ETN: Price not available
+EBAY: Price not available
+ECL: Price not available
+EIX: Price not available
+EW: Price not available
+EA: Price not available
+ELV: Price not available
+EMR: Price not available
+ENPH: Price not available
+ETR: Price not available
+EOG: Price not available
+EPAM: Price not available
+EQT: Price not available
+EFX: 262.19 $
+EQIX: Price not available
+EQR: Price not available
+ERIE: Price not available
+ESS: Price not available
+EL: Price not available
+EG: Price not available
+EVRG: Price not available
+ES: Price not available
+EXC: Price not available
+EXE: Price not available
+EXPE: Price not available
+EXPD: Price not available
+EXR: Price not available
+XOM: Price not available
+FFIV: Price not available
+FDS: Price not available
+FICO: Price not available
+FAST: 40.65 $
+FRT: Price not available
+FDX: Price not available
+FIS: Price not available
+FITB: Price not available
+FSLR: Price not available
+FE: 42.11 $
+FI: Price not available
+F: Price not available
+FTNT: Price not available
+FTV: 69.67 $
+FOXA: 55.04 $
+FOX: Price not available
+BEN: Price not available
+FCX: Price not available
+GRMN: Price not available
+IT: Price not available
+GE: Price not available
+GEHC: Price not available
+GEV: Price not available
+GEN: Price not available
+GNRC: Price not available
+GD: Price not available
+GIS: Price not available
+GM: Price not available
+GPC: Price not available
+GILD: Price not available
+GPN: Price not available
+GL: Price not available
+GDDY: Price not available
+GS: Price not available
+HAL: Price not available
+HIG: Price not available
+HAS: Price not available
+HCA: Price not available
+DOC: Price not available
+HSIC: Price not available
+HSY: Price not available
+HES: Price not available
+HPE: Price not available
+HLT: Price not available
+HOLX: Price not available
+HD: Price not available
+HON: Price not available
+HRL: Price not available
+HST: Price not available
+HWM: Price not available
+HPQ: Price not available
+HUBB: Price not available
+HUM: Price not available
+HBAN: Price not available
+HII: Price not available
+IBM: Price not available
+IEX: Price not available
+IDXX: Price not available
+ITW: Price not available
+INCY: Price not available
+IR: Price not available
+PODD: Price not available
+INTC: Price not available
+ICE: Price not available
+IFF: Price not available
+IPG: Price not available
+INTU: Price not available
+ISRG: Price not available
+IVZ: Price not available
+INVH: Price not available
+IQV: Price not available
+IRM: Price not available
+JBHT: Price not available
+JBL: Price not available
+JKHY: Price not available
+J: Price not available
+JNJ: Price not available
+JCI: Price not available
+JPM: Price not available
+JNPR: Price not available
+K: Price not available
+KVUE: Price not available
+KDP: Price not available
+KEY: Price not available
+KEYS: Price not available
+KMB: Price not available
+KIM: Price not available
+KMI: Price not available
+KKR: Price not available
+KLAC: Price not available
+KHC: Price not available
+KR: Price not available
+LHX: Price not available
+LH: Price not available
+LRCX: Price not available
+LW: Price not available
+LVS: Price not available
+LDOS: Price not available
+LEN: Price not available
+LII: Price not available
+LLY: Price not available
+LIN: Price not available
+LYV: Price not available
+LKQ: Price not available
+LMT: Price not available
+L: Price not available
+LOW: Price not available
+LULU: Price not available
+LYB: Price not available
+MTB: Price not available
+MPC: Price not available
+MKTX: Price not available
+MAR: Price not available
+MMC: Price not available
+MLM: Price not available
+MAS: Price not available
+MA: Price not available
+MTCH: Price not available
+MKC: Price not available
+MCD: Price not available
+MCK: Price not available
+MDT: Price not available
+MRK: Price not available
+META: Price not available
+MET: Price not available
+MTD: Price not available
+MGM: Price not available
+MCHP: Price not available
+MU: Price not available
+MSFT: Price not available
+MAA: Price not available
+MRNA: Price not available
+MHK: Price not available
+MOH: Price not available
+TAP: Price not available
+MDLZ: Price not available
+MPWR: Price not available
+MNST: Price not available
+MCO: Price not available
+MS: Price not available
+MOS: Price not available
+MSI: Price not available
+MSCI: Price not available
+NDAQ: Price not available
+NTAP: Price not available
+NFLX: Price not available
+NEM: Price not available
+NWSA: Price not available
+NWS: Price not available
+NEE: Price not available
+NKE: Price not available
+NI: Price not available
+NDSN: Price not available
+NSC: Price not available
+NTRS: Price not available
+NOC: Price not available
+NCLH: Price not available
+NRG: Price not available
+NUE: Price not available
+NVDA: Price not available
+NVR: Price not available
+NXPI: Price not available
+ORLY: Price not available
+OXY: Price not available
+ODFL: Price not available
+OMC: Price not available
+ON: Price not available
+OKE: Price not available
+ORCL: Price not available
+OTIS: Price not available
+PCAR: Price not available
+PKG: Price not available
+PLTR: Price not available
+PANW: Price not available
+PARA: Price not available
+PH: Price not available
+PAYX: Price not available
+PAYC: Price not available
+PYPL: Price not available
+PNR: Price not available
+PEP: Price not available
+PFE: Price not available
+PCG: Price not available
+PM: Price not available
+PSX: Price not available
+PNW: Price not available
+PNC: Price not available
+POOL: Price not available
+PPG: Price not available
+PPL: Price not available
+PFG: Price not available
+PG: Price not available
+PGR: Price not available
+PLD: Price not available
+PRU: Price not available
+PEG: Price not available
+PTC: Price not available
+PSA: Price not available
+PHM: Price not available
+PWR: Price not available
+QCOM: Price not available
+DGX: Price not available
+RL: Price not available
+RJF: Price not available
+RTX: Price not available
+O: Price not available
+REG: Price not available
+REGN: Price not available
+RF: Price not available
+RSG: Price not available
+RMD: Price not available
+RVTY: Price not available
+ROK: Price not available
+ROL: Price not available
+ROP: Price not available
+ROST: Price not available
+RCL: Price not available
+SPGI: Price not available
+CRM: Price not available
+SBAC: Price not available
+SLB: Price not available
+STX: Price not available
+SRE: Price not available
+NOW: Price not available
+SHW: Price not available
+SPG: Price not available
+SWKS: Price not available
+SJM: Price not available
+SW: Price not available
+SNA: Price not available
+SOLV: Price not available
+SO: Price not available
+LUV: Price not available
+SWK: Price not available
+SBUX: Price not available
+STT: Price not available
+STLD: Price not available
+STE: Price not available
+SYK: Price not available
+SMCI: Price not available
+SYF: Price not available
+SNPS: Price not available
+SYY: Price not available
+TMUS: Price not available
+TROW: Price not available
+TTWO: Price not available
+TPR: Price not available
+TRGP: Price not available
+TGT: Price not available
+TEL: Price not available
+TDY: Price not available
+TER: Price not available
+TSLA: Price not available
+TXN: Price not available
+TPL: Price not available
+TXT: Price not available
+TMO: Price not available
+TJX: Price not available
+TKO: Price not available
+TSCO: Price not available
+TT: Price not available
+TDG: Price not available
+TRV: Price not available
+TRMB: Price not available
+TFC: Price not available
+TYL: Price not available
+TSN: Price not available
+USB: Price not available
+UBER: Price not available
+UDR: Price not available
+ULTA: Price not available
+UNP: Price not available
+UAL: Price not available
+UPS: Price not available
+URI: Price not available
+UNH: Price not available
+UHS: Price not available
+VLO: Price not available
+VTR: Price not available
+VLTO: Price not available
+VRSN: Price not available
+VRSK: Price not available
+VZ: Price not available
+VRTX: Price not available
+VTRS: Price not available
+VICI: Price not available
+V: Price not available
+VST: Price not available
+VMC: Price not available
+WRB: Price not available
+GWW: Price not available
+WAB: Price not available
+WBA: Price not available
+WMT: Price not available
+DIS: Price not available
+WBD: Price not available
+WM: Price not available
+WAT: Price not available
+WEC: Price not available
+WFC: Price not available
+WELL: Price not available
+WST: Price not available
+WDC: Price not available
+WY: Price not available
+WSM: Price not available
+WMB: Price not available
+WTW: Price not available
+WDAY: Price not available
+WYNN: Price not available
+XEL: Price not available
+XYL: Price not available
+YUM: Price not available
+ZBRA: Price not available
+ZBH: Price not available
+ZTS: Price not available
+
+Execution Time: 5.66 seconds

@@ -14,6 +14,11 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 from agents.job_tracking import job_status
+from flask import Flask, jsonify
+import time
+import yfinance as yf
+import asyncio
+
 
 app = Flask(__name__)
 
@@ -212,6 +217,41 @@ def budget_export():
     path = generate_budget_pdf(data)
     return send_file(path, as_attachment=True)
 
+def get_current_market_prices_fast(file_path: str):
+    with open(file_path, "r") as f:
+        symbols = [line.strip() for line in f if line.strip()]
+
+    data = yf.download(
+        tickers=" ".join(symbols),
+        period="1d",
+        interval="1m",  
+        group_by="ticker",
+        threads=True,
+        progress=False
+    )
+
+    results = []
+    for symbol in symbols:
+        try:
+            last_price = data[symbol]["Close"].dropna().iloc[-1]
+            results.append(f"{symbol}: {last_price:.2f} $")
+        except Exception:
+            results.append(f"{symbol}: Price not available")
+
+    return results
+
+@app.route("/market-prices", methods=["GET"])
+def fetch_market_prices():
+    start = time.time()
+    prices = get_current_market_prices_fast("./agents/financeAgent/sp500_symbols.txt")
+    elapsed = time.time() - start
+
+    with open("./agents/financeAgent/market_prices_output.txt", "w") as f:
+        for p in prices:
+            f.write(p + "\n")
+        f.write(f"\nExecution Time: {elapsed:.2f} seconds\n")
+
+    return jsonify({"status": "success", "method": "yfinance", "execution_time": elapsed}), 200
 """
 #TEST İÇİN POSTMAN İLE DENEME KISMI
 
