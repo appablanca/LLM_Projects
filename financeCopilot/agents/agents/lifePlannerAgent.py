@@ -95,7 +95,7 @@ NEVER:
 
 class LifePlannerAgent(Agent):
     def __init__(self, name, role):
-        super().__init__(name="Budget Planner Agent", role=lifePlannerAgentRole)
+        super().__init__(name="Life Planner Agent", role=lifePlannerAgentRole)
         self.model = genai.GenerativeModel(
             model_name="gemini-2.0-flash",
             generation_config={
